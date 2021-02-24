@@ -1,0 +1,54 @@
+# ------------------------
+#+TITLE: IMAGE SEGMENTATION PROJECT
+# ------------------------
+
+*Overleaf Document*: [[https://www.overleaf.com/2716186289qdcsnxyfpmsn][Link]]
+
+* TODO Overview
+1) [X] "ROF" paper (/Nonlinear total variation based noise removal algorithms/):
+   This paper in mainly of historical importance, as one of the first methods using a variational approach in image processing, more precisely /denoising/. They introduce the TV-functional as a regulariser and use an $L^2$ data-fitting penalty.
+2) [X] Chan-Vese model (/Active contours without edges/):
+   Introduces a level-set formulation of the Mumford-Shah model, with "perimeter" regularisation terms,
+3) [X] Convexification of Chan-Vese (/Algorithms for Finding Global Minimizers of Image Segmentation and Denoising Models/):
+   Builds upon the previous paper, but reformulates the problem via "softened" characteristic functions. Then shows that a global minimizer of the Mumford-Shah model can be obtained by minimising over these softened characteristic functions and thresholding. In this process they use a TV-regularisation. (/Note/: The central point of our approach is in replacing this TV-regularisation with a trained network.)
+4) [X] [[https://arxiv.org/abs/1805.11572][CMI paper]] on adversarial regularizers (/Adversarial Regularizers in Inverse Problems/):
+   This article develops a technique of using networks, trained as /critics/ distinguishing good from bad data, as regularisation functionals. In this context, they apply this method for regularising inverse problems. For more information, see further below.
+5) [ ] Source Code:
+
+** Summary for Source Code
+
+- ~Adversarial_Regulariser.py~ :: This file provides an example for a wrapper class used to run "Experiments" and is the main-file (i.e. running everything in the end).
+- ~forward_models.py~ :: Defines forward operators for two inverse problems (namely computed tomography and denoising). In our case, we will only consider Mumford-Shah data-fitting terms, so there is no need for abstract forward models.
+- ~data_pips.py~ :: Provides an abstract class that return a single image and implements two classes for retrieval from BSDS and LUNA datasets, as well as a single method for generating ellipsoids. We could use a similar design for our setup, but this is not much work to build ourselves.
+- ~networks.py~ :: Defines an abstract class ~network~ which wraps several network architectures. What exactly is the return value of the ~net~ function?
+- ~Framework.py~ :: 
+
+
+** Summary for the CMI paper
+The central idea of the paper is to use a "discrimination network" (or "critic") as a regularisation functional. Namely, the network learns to discriminate between /ground truth/ images, and /noisy reconstructions/. Since, in the inverse problem setting, the measurement and image space are different, we have to map the measurement distribution to the latter by applying (for example) a pseudo-inverse of the forward operator. The critic network will then be trained to be a function of unit gradient, taking high values on the noisy reconstructions and low values on the ground truth images.
+
+In the end, the critic network is simply used as a regularisation functional in the minimisation $\mathrm{argmin}_{x} \| Ax - y\|_2^2 + \lambda \Psi_{\Theta}(x)$, where $A$ is the forward operator.
+
+*Consequence for Image Segmentation*:
+- The critic should learn to discriminate between "perfect" segmentations (e.g. artificially generated or via Euler's Elastica) and "primitive" segmentations (e.g. via Chan-Vese with TV-regulariser).
+- For this, we need training data. In the first run, this data can be generated artificially. That is, we just randomly generate some shapes (with known segmentation). For the "primitive" segmentations we will then corrupt these images via noise and perhaps rougher operations like "cutting out" and then run a primitive variational algorithm on the resulting image.
+- The final network will then be used as a /regularisation functional/ in the Chan-Vese algorithm.
+
+
+** Michael's Summary
+1. For image denoising the starting point is the seminal "ROF" paper which details how we would like to minimise an energy functional to "clean" the image. They use a numerical approach to solve the underlying PDE but we will not really focus on this so feel free to ignore the details: https://www.sciencedirect.com/science/article/abs/pii/016727899290242F?via%3Dihub.
+
+2. For image segmentation, one seminal paper introduces the "Chan-Vese" model. This views the segmentation of the image as the level set of some arbitrary function which we would like to solve. The key thing to understand here is that the model has a regulariser + data fitting term structure. The regulariser being TV and the data fitting term ensures the segmentation isolates only homogeneous regions. We really only care about the model and not the numerics, so feel free to ignore: https://www.math.ucla.edu/~lvese/PAPERS/IEEEIP2001.pdf
+
+3. The Chan-Vese model is non-convex and can give quite peculiar results if not initialised correctly, so then Chan, Esedoglu and Nikolova introduced a newer convexified version of the model by introducing the constraint that we minimise over [0,1]. They then relax this constraint by including a penalty term which encourages solution u to be in [0,1]. The segmentation is then a threshold of this u at almost any value in (0,1): http://mnikolova.perso.math.cnrs.fr/ChanEseNikoSiap06.pdf
+
+4. The main bulk of this project will rely on the work of Sebastian in the CIA group who introduced the idea of Adversarial regularisers that learn from the training data to distinguish "undesirable" from "desirable" image distributions. This paper gets quite technical but I think if you understand the idea behind how it works and also how the algorithms work that should be sufficient to make a start. This is the key idea I would like you to repurpose to image segmentation. Whereas they consider image denoising and reconstruction. Our "desirable" segmentation will be the ground truth and the "undesirable" segmentation will be the Chan-Vese segmentation. I am really hoping that the regulariser we learn is more useful than typically used TV and TGV but is more similar to Euler Elastica (which is a nightmare to solve numerically) where the segmentation encompasses missing components in the image.
+
+5. The code is all on GitHub: https://github.com/lunz-s/DeepAdverserialRegulariser and so it is potentially the case that extending the actual code will be relatively simple. We need to generate some training data here too and I propose starting with a toy problem in 2D: (a) we generate synthetic images with ground truths for certain regions (our desirable segmentations). (b) we erode some of the image with Chan-Vese automatically in python (our undersirable segmentations) (c) we try and learn a regulariser to segment the toy images (c) if this works out we can move onto some medical imaging problems.
+
+6. The final part would be to compare a traditional U-net or nnU-net segmentation architecture to the new proposed architecture of the model.
+
+
+* TODO Steps
+- [ ] Get the code running
+- [ ] Access to computation resources
