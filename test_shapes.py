@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from ClassFiles.dataGenerator import ShapeGenerator
+from ClassFiles.ShapeGenerator import ShapeGenerator
 
 shapes = ShapeGenerator(128, 128)
 shapes.add_polygon(times=4)
