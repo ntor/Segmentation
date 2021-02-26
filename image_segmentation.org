@@ -4,7 +4,7 @@
 
 *Overleaf Document*: [[https://www.overleaf.com/2716186289qdcsnxyfpmsn][Link]]
 
-* TODO Overview
+* Overview
 1) [X] "ROF" paper (/Nonlinear total variation based noise removal algorithms/):
    This paper in mainly of historical importance, as one of the first methods using a variational approach in image processing, more precisely /denoising/. They introduce the TV-functional as a regulariser and use an $L^2$ data-fitting penalty.
 2) [X] Chan-Vese model (/Active contours without edges/):
@@ -13,15 +13,15 @@
    Builds upon the previous paper, but reformulates the problem via "softened" characteristic functions. Then shows that a global minimizer of the Mumford-Shah model can be obtained by minimising over these softened characteristic functions and thresholding. In this process they use a TV-regularisation. (/Note/: The central point of our approach is in replacing this TV-regularisation with a trained network.)
 4) [X] [[https://arxiv.org/abs/1805.11572][CMI paper]] on adversarial regularizers (/Adversarial Regularizers in Inverse Problems/):
    This article develops a technique of using networks, trained as /critics/ distinguishing good from bad data, as regularisation functionals. In this context, they apply this method for regularising inverse problems. For more information, see further below.
-5) [ ] Source Code:
+5) [X] Source Code: See below for details on the individual files. The main take-away is that we won't need much of the ~forward_models.py~ and ~networks.py~ files, as we will mostly focus on regularising the convexified Chan-Vese. (Perhaps later one should implement some other architectures for comparison experiments.)
 
 ** Summary for Source Code
 
 - ~Adversarial_Regulariser.py~ :: This file provides an example for a wrapper class used to run "Experiments" and is the main-file (i.e. running everything in the end).
 - ~forward_models.py~ :: Defines forward operators for two inverse problems (namely computed tomography and denoising). In our case, we will only consider Mumford-Shah data-fitting terms, so there is no need for abstract forward models.
 - ~data_pips.py~ :: Provides an abstract class that return a single image and implements two classes for retrieval from BSDS and LUNA datasets, as well as a single method for generating ellipsoids. We could use a similar design for our setup, but this is not much work to build ourselves.
-- ~networks.py~ :: Defines an abstract class ~network~ which wraps several network architectures. What exactly is the return value of the ~net~ function?
-- ~Framework.py~ :: 
+- ~networks.py~ :: Defines an abstract class ~network~ which wraps several network architectures.
+- ~Framework.py~ :: Implements ~GenericFramework~, which is an abstract wrapper for the whole training and testing pipeline. Then implements concrete pipelines for the adversarial regulariser and for TV.
 
 
 ** Summary for the CMI paper
@@ -50,5 +50,10 @@ In the end, the critic network is simply used as a regularisation functional in 
 
 
 * TODO Steps
+- [-] Implement an artifical data-generator
+  + [X] Class wrapper, polygons, ellipses, noise
+  + [ ] Random smooth curves
+  + [ ] Saving to files
+- [ ] Implement a global segmentation algorithm
 - [ ] Get the code running
 - [ ] Access to computation resources
