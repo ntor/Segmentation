@@ -416,5 +416,3 @@ for i in range(10):
 : Accuracy of horse : 66 %
 : Accuracy of  ship : 60 %
 : Accuracy of truck : 75 %
-
-**

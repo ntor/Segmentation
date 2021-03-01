@@ -23,9 +23,9 @@ def data_fitting(chanvese_batch, lmb1=1, lmb2=1, alpha=None, c1=None, c2=None):
     assert chanvese_batch.size(1) == 1  # require greyscale image, i.e. only one channel
 
     # calculate c1, c2 implicity from u?
-    if c1 == None:
+    if c1 is None:
         c1 = None  # TODO
-    if c2 == None:
+    if c2 is None:
         c2 = None  # TODO
 
     # not sure, but I don't think we want to backprop along c1, c2 when
@@ -37,7 +37,7 @@ def data_fitting(chanvese_batch, lmb1=1, lmb2=1, alpha=None, c1=None, c2=None):
     chanvese_term = None  # TODO
 
     # calculate alpha implicity from u, lambda1, lambda2, c1, and c2?
-    if alpha == None:
+    if alpha is None:
         alpha = None  # TODO
 
     # not sure, but I don't think we want to backprop along alpha when
@@ -64,9 +64,8 @@ def reconstruct(chanvese_batch, NN, lmb, epsilon, reconstruction_steps=1):
     chanvese_batch must be a torch.tensor of size [batchsize, channels, height, width]
     NN is the learnt regulariser
     """
-    reconstructed_batch = chanvese_batch.to(
-        next(NN.parameters()).device
-    )  # transfer chanvese_batch to same device NN is stored on
+    # transfer chanvese_batch to same device NN is stored on
+    reconstructed_batch = chanvese_batch.to(next(NN.parameters()).device)
 
     for i in range(reconstruction_steps):
         # set requires_grad to True, gradients are initialised at zero, and
@@ -100,9 +99,8 @@ def quality(reconstructed_batch, groundtruth_batch):
     size [batchsize, channels, height, width]
 
     """
-    return (
-        (reconstructed_batch - groundtruth_batch).square().sum((1, 2, 3)).sqrt()
-    )  # [batchsize]
+    # [batchsize]
+    return ((reconstructed_batch - groundtruth_batch).square().sum((1, 2, 3)).sqrt())
 
 
 """ analogue of Sebastian's function log_minimum (except without storing any

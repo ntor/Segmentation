@@ -7,9 +7,9 @@ from torch.utils.data import TensorDataset, DataLoader
 
 """ for now we assume we generate all training data beforehand as numpy arrays.
 we then convert to pytorch tensors and store on the cpu memory, converting to
-gpu memory when needed. If memory or speed becomes an issue we could rewrite the training data
-generation on the gpu using pytorch's linear algebra, and generate it in situ
-while training """
+gpu memory when needed. If memory or speed becomes an issue we could rewrite the
+training data generation on the gpu using pytorch's linear algebra, and generate
+it in situ while training """
 
 
 def train(
@@ -62,6 +62,7 @@ def train(
             don't currently do any shuffling of the dataset, just pass through the
             entire dataset (in batches), once per epoch not sure what Sebastian
             does"""
+
             assert groundtruth_batch.size() == chanvese_batch.size()
 
             groundtruth_batch = groundtruth_batch.to(device)
