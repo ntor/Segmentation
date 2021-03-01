@@ -34,8 +34,6 @@ white = =(255,255,255)
 """
 
 
-
-
 import math, random
 import numpy as np
 from skimage.util import random_noise
@@ -56,13 +54,19 @@ def generatePolygon( ctrX, ctrY, aveRadius, irregularity, spikeyness, numVerts) 
     Randon noise is added by varying the angular spacing between sequential points,
     and by varying the radial distance of each point from the centre.
 
-    Params: ctrX, ctrY - coordinates of the "centre" of the polygon aveRadi - in
-    px, the average radius of this polygon, this roughly controls how large the
-    polygon is, really only useful for order of magnitude. irregularity - [0,1]
-    indicating how much variance there is in the angular spacing of vertices.
-    [0,1] will map to [0, 2pi/numberOfVerts] spikeyness - [0,1] indicating how
-    much variance there is in each vertex from the circle of radius aveRadius.
-    [0,1] will map to [0, aveRadius] numVert - self-explanatory
+    Params:
+    ctrX, ctrY - coordinates of the "centre" of the polygon
+
+    aveRadi - in px, the average radius of this polygon, this roughly controls how large the
+    polygon is, really only useful for order of magnitude.
+
+    irregularity - [0,1] indicating how much variance there is in the angular spacing of vertices.
+    [0,1] will map to [0, 2pi/numberOfVerts]
+
+    spikeyness - [0,1] indicating how much variance there is in each vertex from the circle of radius aveRadius.
+    [0,1] will map to [0, aveRadius]
+
+    numVert - self-explanatory
 
     Returns a list of vertices, in CCW order.
 
@@ -114,6 +118,7 @@ def polygonz(im, n, m, rad , nverts,colour) :
     draw = ImageDraw.Draw(im)
     draw.polygon(verts,outline=colour, fill=colour)
     return im 
+
 
 def ellipze(im, n, m, rad) :
     ctrX = n/2
