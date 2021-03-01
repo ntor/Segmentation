@@ -1,0 +1,4 @@
+.ob-jupyter/
+.vscode/
+.auctex-auto/
+ClassFiles/__pycache__
