@@ -10,39 +10,41 @@ from skimage.util import random_noise
 from PIL import Image, ImageDraw
 
 
-
 class ShapeGenerator:
     "A wrapper class to generate random geometric shapes "
 
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.image = Image.new('L', (width, height), 255)
+        self.image = Image.new("L", (width, height), 255)
         self._canvas = ImageDraw.Draw(self.image)
 
-    def add_polygon(self, size=0, times = 1):
+    def add_polygon(self, size=0, times=1):
         if size == 0:
             # If the user does not provide an explicit size for the polygon,
             # then take an eigth of the minimal dimensions of the image (as an
             # arbitrary scale).
-            size = min(self.width, self.height)/8
+            size = min(self.width, self.height) / 8
 
         for i in range(times):
             x_center = random.uniform(0, self.width)
             y_center = random.uniform(0, self.height)
-            verts = generate_polygon_coords(x_center, y_center
-                                            , aveRadius = size
-                                            , irregularity = 0.35
-                                            , spikeyness = 0.2
-                                            , numVerts = 10)
+            verts = generate_polygon_coords(
+                x_center,
+                y_center,
+                aveRadius=size,
+                irregularity=0.35,
+                spikeyness=0.2,
+                numVerts=10,
+            )
             self._canvas.polygon(verts, outline=0, fill=0)
 
-    def add_ellipse(self, size=0, times = 1):
+    def add_ellipse(self, size=0, times=1):
         if size == 0:
             # If the user does not provide an explicit size for the polygon,
             # then take an eigth of the minimal dimensions of the image (as an
             # arbitrary scale).
-            size = min(self.width, self.height)/8
+            size = min(self.width, self.height) / 8
 
         for i in range(times):
             x_center = random.uniform(0, self.width)
@@ -52,22 +54,18 @@ class ShapeGenerator:
             lowery = y_center - np.random.exponential(size)
             upperx = x_center + np.random.exponential(size)
             uppery = y_center + np.random.exponential(size)
-            #Imagedarw then draws the ellipse
-            shape = [(lowerx, lowery), (upperx , uppery)]
+            # Imagedarw then draws the ellipse
+            shape = [(lowerx, lowery), (upperx, uppery)]
             self._canvas.ellipse(shape, outline=0, fill=0)
-
-
 
     def add_noise(self):
         im_arr = np.asarray(self.image)
-        #random_noise() method will convert image in [0, 255] to [0, 1.0],
-        #inherently it use np.random.normal() to create normal distribution
-        #and adds the generated noised back to image
-        noise_img = random_noise(im_arr, mode='gaussian', var=0.05)
-        noise_img = (255*noise_img).astype(np.uint8)
+        # random_noise() method will convert image in [0, 255] to [0, 1.0],
+        # inherently it use np.random.normal() to create normal distribution
+        # and adds the generated noised back to image
+        noise_img = random_noise(im_arr, mode="gaussian", var=0.05)
+        noise_img = (255 * noise_img).astype(np.uint8)
         self.image = Image.fromarray(noise_img)
-
-
 
 
 def generate_polygon_coords(ctrX, ctrY, aveRadius, irregularity, spikeyness, numVerts):
@@ -95,22 +93,22 @@ def generate_polygon_coords(ctrX, ctrY, aveRadius, irregularity, spikeyness, num
     """
 
     def clip(x, min, max):
-        if(min > max):
+        if min > max:
             return x
-        elif(x < min):
+        elif x < min:
             return min
-        elif(x > max):
+        elif x > max:
             return max
         else:
             return x
 
-    irregularity = clip(irregularity, 0, 1) * 2*math.pi / numVerts
+    irregularity = clip(irregularity, 0, 1) * 2 * math.pi / numVerts
     spikeyness = clip(spikeyness, 0, 1) * aveRadius
 
     # generate n angle steps
     angleSteps = []
-    lower = (2*math.pi / numVerts) - irregularity
-    upper = (2*math.pi / numVerts) + irregularity
+    lower = (2 * math.pi / numVerts) - irregularity
+    upper = (2 * math.pi / numVerts) + irregularity
     sum = 0
     for i in range(numVerts):
         tmp = random.uniform(lower, upper)
@@ -118,17 +116,17 @@ def generate_polygon_coords(ctrX, ctrY, aveRadius, irregularity, spikeyness, num
         sum = sum + tmp
 
     # normalize the steps so that point 0 and point n+1 are the same
-    k = sum / (2*math.pi)
+    k = sum / (2 * math.pi)
     for i in range(numVerts):
         angleSteps[i] = angleSteps[i] / k
 
     # now generate the points
     points = []
-    angle = random.uniform(0, 2*math.pi)
+    angle = random.uniform(0, 2 * math.pi)
     for i in range(numVerts):
-        r_i = clip(random.gauss(aveRadius, spikeyness), 0, 2*aveRadius)
-        x = ctrX + r_i*math.cos(angle)
-        y = ctrY + r_i*math.sin(angle)
+        r_i = clip(random.gauss(aveRadius, spikeyness), 0, 2 * aveRadius)
+        x = ctrX + r_i * math.cos(angle)
+        y = ctrY + r_i * math.sin(angle)
         points.append((int(x), int(y)))
 
         angle = angle + angleSteps[i]
