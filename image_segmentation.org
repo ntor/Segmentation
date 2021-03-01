@@ -54,6 +54,6 @@ In the end, the critic network is simply used as a regularisation functional in 
   + [X] Class wrapper, polygons, ellipses, noise
   + [ ] Random smooth curves
   + [ ] Saving to files
-- [ ] Implement a global segmentation algorithm
+- [X] Implement a global segmentation algorithm
 - [ ] Get the code running
 - [ ] Access to computation resources
