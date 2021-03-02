@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
+import ClassFiles.ChanVese as ChanVese
 
 """
 the regularisation parameter lambda CANNOT be initialised in the same way for segmentation as for denoising
@@ -35,16 +36,16 @@ def data_fitting(
     assert chanvese_batch.size() == noisy_batch.size()
     assert chanvese_batch.size(1) == 1  # require greyscale image, i.e. only one channel
 
+    batchsize = chanvese_batch.size(0)
+
     # calculate c1, c2 implicity from u
     """
     I DO THINK we want to backprop along c1, c2 when performing the reconstruction (algorithm 2), only relevant when c1, c2 are calculated implicitly
     """
-    if c1 == None:
-        c1 = (noisy_batch * (chanvese_batch > threshold)).mean((1, 2, 3))  # [batchsize]
-    if c2 == None:
-        c2 = (noisy_batch * (chanvese_batch <= threshold)).mean(
-            (1, 2, 3)
-        )  # [batchsize]
+    if c1 is None or c2 is None:
+        c1, c2 = np.zeros(batchsize), np.zeros(batchsize)
+        for i in range(batchsize):
+            c1[i], c2[i] = ChanVese.get_segmentation_mean_colours(chanvese_batch[i], noisy_batch[i])
 
     chanvese_term = lambda_chanvese * (
         (noisy_batch - c1.unsqueeze(1).unsqueeze(2).unsqueeze(3)).square()
@@ -56,7 +57,7 @@ def data_fitting(
     I DON'T THINK we want to backprop along alpha when performing the reconstruction (algorithm 2), only relevant when alpha is calculated implicitly
     hence .detach() below
     """
-    if alpha == None:
+    if alpha is None:
         alpha = (
             chanvese_term.detach().abs().max(3)[0].max(2)[0].max(1)[0]
         )  # [batchsize]

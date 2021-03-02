@@ -4,16 +4,16 @@
 
 *Overleaf Document*: [[https://www.overleaf.com/2716186289qdcsnxyfpmsn][Link]]
 
-* TODO Progress
+* Progress
 - [-] Implement an artifical data-generator
   + [X] Artifical image generator (polygons, ellipses, noise) [James]
   + [X] Class wrapper for generator [Peter]
   + [X] Dataloader Framework [Peter]
   + [ ] Data Augmentation
   + [ ] Random smooth curves(?)
-- [-] Implement Chan-Vese
+- [X] Implement Chan-Vese
   - [X] Notebook proof-of-principle [Peter]
-  - [ ] Implement class wrapper
+  - [X] Implement class wrapper [Peter]
 - [-] Port Sebastian's code to pytorch
   + [X] Classifier training routine (Algorithm 1) [Lucas]
   + [X] Classifier network [Lucas]
@@ -21,6 +21,9 @@
   + [ ] Test the code
 - [ ] Access to computation resources
 - [ ] Git LFS handling for datasets
+
+
+** Questions
 
 
 * Overview
