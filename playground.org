@@ -36,9 +36,6 @@ if torch.cuda.is_available():
 print(f"Device tensor is stored on: {tensor.device}")
 #+end_src
 
-#+RESULTS:
-: Device tensor is stored on: cpu
-
 
 
 ** Initialising a Model and Backward Propagation
@@ -224,13 +221,6 @@ classes = ('plane', 'car', 'bird', 'cat',
            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 #+end_src
 
-#+RESULTS:
-:RESULTS:
-: Downloading https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to ./data/cifar-10-python.tar.gz
-: HBox(children=(HTML(value=''), FloatProgress(value=1.0, bar_style='info', layout=Layout(width='20px'), max=1.0…Extracting ./data/cifar-10-python.tar.gz to ./data
-: Files already downloaded and verified
-:END:
-
 We use the dataloader ~trainloader~ as an iterator to retrieve one batch of images (with labels) and display them.
 
 #+begin_src jupyter-python
@@ -256,12 +246,6 @@ imshow(torchvision.utils.make_grid(images))
 # print labels
 print(' '.join('%5s' % classes[labels[j]] for j in range(4)))
 #+end_src
-
-#+RESULTS:
-:RESULTS:
-[[file:./.ob-jupyter/b0a2e19ea6640558069f482189a9ca1d311fbac5.png]]
-: truck  frog plane  ship
-:END:
 
 
 We would now like to define a neural network for image classification:
@@ -293,8 +277,6 @@ class Net(nn.Module):
 
 net = Net()
 #+end_src
-
-#+RESULTS:
 
 
 #+begin_src jupyter-python
@@ -329,29 +311,6 @@ for epoch in range(3):  # loop over the dataset multiple times
 print('Finished Training')
 #+end_src
 
-#+RESULTS:
-#+begin_example
-[1,  2000] loss: 1.210
-[1,  4000] loss: 1.207
-[1,  6000] loss: 1.212
-[1,  8000] loss: 1.188
-[1, 10000] loss: 1.205
-[1, 12000] loss: 1.196
-[2,  2000] loss: 1.106
-[2,  4000] loss: 1.115
-[2,  6000] loss: 1.118
-[2,  8000] loss: 1.085
-[2, 10000] loss: 1.109
-[2, 12000] loss: 1.102
-[3,  2000] loss: 1.019
-[3,  4000] loss: 1.020
-[3,  6000] loss: 1.059
-[3,  8000] loss: 1.055
-[3, 10000] loss: 1.047
-[3, 12000] loss: 1.045
-Finished Training
-#+end_example
-
 #+begin_src jupyter-python
 images, labels = dataiter.next()
 
@@ -382,9 +341,6 @@ print('Accuracy of the network on the 10000 test images: %d %%' % (
     100 * correct / total))
 #+end_src
 
-#+RESULTS:
-: Accuracy of the network on the 10000 test images: 60 %
-
 #+begin_src jupyter-python
 class_correct = list(0. for i in range(10))
 class_total = list(0. for i in range(10))
@@ -404,15 +360,3 @@ for i in range(10):
     print('Accuracy of %5s : %2d %%' % (
         classes[i], 100 * class_correct[i] / class_total[i]))
 #+end_src
-
-#+RESULTS:
-: Accuracy of plane : 66 %
-: Accuracy of   car : 59 %
-: Accuracy of  bird : 54 %
-: Accuracy of   cat : 45 %
-: Accuracy of  deer : 57 %
-: Accuracy of   dog : 47 %
-: Accuracy of  frog : 71 %
-: Accuracy of horse : 66 %
-: Accuracy of  ship : 60 %
-: Accuracy of truck : 75 %

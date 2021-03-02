@@ -52,9 +52,8 @@ In the end, the critic network is simply used as a regularisation functional in 
 * TODO Steps
 - [-] Implement an artifical data-generator
   + [X] Class wrapper, polygons, ellipses, noise
+  + [X] Way for sharing data (database?)
   + [ ] Random smooth curves
-  + [ ] Saving to files
-  + [ ] Way for sharing data (database?)
-  + [ ] Dataloader Framework
+  + [ ] Dataloader Framework (perhaps with random transformations?)
 - [X] Implement a global segmentation algorithm
 - [ ] Access to computation resources
