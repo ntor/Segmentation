@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import matplotlib.pyplot as plt
+
 # import torch
 # from PIL import Image
 import numpy as np
@@ -67,11 +68,11 @@ class ChanVese:
             self.u, self._image_arr, self.segmentation_threshold
         )
 
-    # TODO Modify to also work with colours.
+    # TODO Modify to also work with coloured images.
     def show_segmentation(self):
         """Plots and shows the image with its segmentation superimposed."""
-        plt.imshow(self._image_arr, cmap='gray', vmin=0, vmax=1)
-        plt.contour(np.clip(self.u, self.segmentation_threshold, 1), [0], colors='red')
+        plt.imshow(self._image_arr, cmap="gray", vmin=0, vmax=1)
+        plt.contour(np.clip(self.u, self.segmentation_threshold, 1), [0], colors="red")
         plt.show()
 
     # TODO Implement way to stop according to energy stabilisation.
@@ -93,7 +94,11 @@ class ChanVese:
             self.single_step(lmb, epsilon, theta)
             if (i + 1) % update_c_interval == 0:
                 self.update_c()
-                print("Energy: {}".format(CEN_energy(self.u, self.c[0], self.c[1], lmb, self._image_arr)))
+                print(
+                    "Energy: {}".format(
+                        CEN_energy(self.u, self.c[0], self.c[1], lmb, self._image_arr)
+                    )
+                )
 
 
 def divergence(f):
