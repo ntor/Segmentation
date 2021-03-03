@@ -21,9 +21,10 @@
   + [ ] Test the code
 - [ ] Access to computation resources
 - [ ] Git LFS handling for datasets
+- [ ] Check different classifier architectures
+- [ ] Implement "quality" quantities (Jaccard/IOU, DICE, Haussdorf)
+- [ ] Extend ~tqdm~ to obtain a "progess interface" for quality measures, energy, etc.
 
-
-** Questions
 
 
 * Overview
