@@ -70,13 +70,12 @@ class ChanVese:
 
     # TODO Modify to also work with coloured images.
     def show_segmentation(self):
-        """Plots and shows the image with its segmentation superimposed."""
+        """Plots and shows the image with its segmentation contour superimposed."""
         plt.imshow(self._image_arr, cmap="gray", vmin=0, vmax=1)
         plt.contour(np.clip(self.u, self.segmentation_threshold, 1), [0], colors="red")
         plt.show()
 
     # TODO Implement way to stop according to energy stabilisation.
-    # TODO Perhaps implement the stabilised version of the algorithm
     def run(
         self,
         steps,
@@ -180,10 +179,7 @@ def clip_vector_field(z, threshold=1):
 
     def criterion(v):
         norm = np.linalg.norm(v)
-        if norm > threshold:
-            return v / norm
-        else:
-            return v
+        return ((v / norm) if norm > threshold else v)
 
     return np.apply_along_axis(criterion, -1, z)
     # return z / ((1 + np.maximum(0, np.apply_along_axis(np.linalg.norm, -1, z) - 1))[...,np.newaxis])

@@ -9,8 +9,8 @@
   + [X] Artifical image generator (polygons, ellipses, noise) [James]
   + [X] Class wrapper for generator [Peter]
   + [X] Dataloader Framework [Peter]
+  + [ ] Storing and loading segmentation data
   + [ ] Data Augmentation
-  + [ ] Random smooth curves(?)
 - [X] Implement Chan-Vese
   - [X] Notebook proof-of-principle [Peter]
   - [X] Implement class wrapper [Peter]
@@ -25,6 +25,10 @@
 - [ ] Implement "quality" quantities (Jaccard/IOU, DICE, Haussdorf)
 - [ ] Extend ~tqdm~ to obtain a "progess interface" for quality measures, energy, etc.
 
+
+* TODO Jobs
+- [ ] Move test files and notebooks to an independent directory, but change exec. path
+- [ ] Rename files according to conventions
 
 
 * Overview
