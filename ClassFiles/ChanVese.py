@@ -22,11 +22,13 @@ class ChanVese:
             self.c = c
 
         self.u = np.random.random(self.image_shape)
+        self._u_interm = np.array(self.u)
         self._z = (np.random.random(self.image_shape + (self._dim,)) - 0.5) / self._dim
 
-    def single_step(self, lmb=0.5, epsilon=0.1):
-        """Update 'self.u' and 'self._z' according to a 'primal-dual' algorithm for
-        minimisation of the Chan-Esedoglu-Nikolova functional.
+    def single_step(self, lmb=0.5, epsilon=0.1, theta=0.2):
+        """Update 'self.u', as well as the helper functions 'self._u_interm' and
+        'self._z', according to a 'primal-dual' algorithm (Chambolla-Pock, 2011)
+        for minimisation of the Chan-Esedoglu-Nikolova functional.
 
         Consult the last part of
         https://www.math.u-bordeaux.fr/~npapadak/TP/TP2.pdf for more
@@ -38,15 +40,19 @@ class ChanVese:
 
         'epsilon': step size for both the 'u' and 'z' gradient steps
 
+        'theta':
+
         """
 
         self._z = clip_vector_field(
-            self._z + epsilon * np.stack(np.gradient(self.u), axis=-1)
+            self._z + epsilon * np.stack(np.gradient(self._u_interm), axis=-1)
         )
         tmp = lmb * (
             (self._image_arr - self.c[0]) ** 2 - (self._image_arr - self.c[1]) ** 2
         )
-        self.u = np.clip(self.u + epsilon * (divergence(self._z) - tmp), 0, 1)
+        u_update = np.clip(self.u + epsilon * (divergence(self._z) - tmp), 0, 1)
+        self._u_interm = (1 + theta) * u_update - theta * self.u
+        self.u = u_update
 
     def update_c(self):
         """Update the average colours in the segmentation domain and its complement. See
@@ -61,6 +67,7 @@ class ChanVese:
             self.u, self._image_arr, self.segmentation_threshold
         )
 
+    # TODO Modify to also work with colours.
     def show_segmentation(self):
         """Plots and shows the image with its segmentation superimposed."""
         plt.imshow(self._image_arr, cmap='gray', vmin=0, vmax=1)
@@ -74,6 +81,7 @@ class ChanVese:
         steps,
         lmb=0.5,
         epsilon=0.1,
+        theta=0.2,
         update_c_interval=20,
         show_iterations=False,
     ):
@@ -82,7 +90,7 @@ class ChanVese:
             step_range = tqdm(step_range)
 
         for i in step_range:
-            self.single_step(lmb, epsilon)
+            self.single_step(lmb, epsilon, theta)
             if (i + 1) % update_c_interval == 0:
                 self.update_c()
                 print("Energy: {}".format(CEN_energy(self.u, self.c[0], self.c[1], lmb, self._image_arr)))
