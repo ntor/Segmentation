@@ -12,6 +12,7 @@ training data generation on the gpu using pytorch's linear algebra, and generate
 it in situ while training """
 
 
+# REVIEW Maybe we should directly provide the training data via DataLoader's?
 def train(
     NN,
     groundtruth_numpy,
@@ -70,35 +71,34 @@ def train(
 
             batchsize = groundtruth_batch.size(0)
 
-            # intermediate point
-            epsilon = torch.rand([batchsize], device=device)  # [batchsize]
-            epsilon = (
-                epsilon.unsqueeze(1)
-                .unsqueeze(2)
-                .unsqueeze(3)
-                .expand(groundtruth_batch.size())
-            )  # [batchsize, channels, height, width]
+            # REVIEW: Unsqueezing over the 1-axis is enough for batchwise multiplication
+            epsilon = torch.rand([batchsize], device=device).unsqueeze(1)
+
             intermediate_batch = (
                 epsilon * groundtruth_batch + (1 - epsilon) * chanvese_batch
             )  # [batchsize, channels, height, width]
             intermediate_batch.requires_grad = True
 
             # apply the neural network
-            groundtruth_NN = NN(groundtruth_batch)  # [batchsize]
-            chanvese_NN = NN(chanvese_batch)  # [batchsize]
-            intermediate_NN = NN(intermediate_batch)  # [batchsize]
-            # [1] trick to compute all gradients in one go
-            intermediate_NN = intermediate_NN.sum()
+            groundtruth_out = NN(groundtruth_batch)  # [batchsize]
+            chanvese_out = NN(chanvese_batch)  # [batchsize]
+            intermediate_out = NN(intermediate_batch)  # [batchsize]
 
+            # REVIEW: Why mean() and not sum()?
             # calculate the loss
-            wasserstein_loss = (groundtruth_NN - chanvese_NN).mean()  # [1]
-            # [batchsize, channels, height, width], must create_graph so can
-            # backprop again (second derivatives) during gradient descent
+            wasserstein_loss = (groundtruth_out - chanvese_out).mean()  # [1]
+
+            # Set 'create_graph=True' so we can backprop a function of the
+            # gradient (--> second derivatives). This is needed for implementing
+            # the approximate 1-Lipschitz constraint.
+            # REVIEW: Maybe we should use "retain_graph"?
             gradient = torch.autograd.grad(
-                intermediate_NN, intermediate_batch, create_graph=True
+                intermediate_out.sum(), intermediate_batch, create_graph=True
             )[0]
+            # --> [batchsize, channels, height, width]
+
             gradient_loss = (
-                (F.relu(gradient.square().sum((1, 2, 3)).sqrt())).square().mean()
+                (F.relu(gradient.square().sum((1, 2, 3)).sqrt() - 1)).square().mean()
             )  # [1]
             loss = wasserstein_loss + mu * gradient_loss  # [1]
 

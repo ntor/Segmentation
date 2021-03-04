@@ -4,7 +4,32 @@
 
 #+LATEX_CLASS: scrartcl
 
-* PyTorch
+* Understanding Autograd
+
+[[https://blog.paperspace.com/pytorch-101-understanding-graphs-and-automatic-differentiation/][This]] blog entry explains the connection between computational graphs and the backpropagation.
+
+#+begin_src jupyter-python
+import torch
+
+# Create a tensor with gradient tracking and derive another tensor.
+a = torch.rand(1,2,2, requires_grad=True)
+b = a**2
+
+# Show that b remembers its origins:
+print("Is 'a' a leaf? {}".format(a.is_leaf))
+print("Its grad_fn is: {}".format(a.grad_fn))
+
+print("Is 'b' a leaf? {}".format(b.is_leaf))
+print("Its grad_fn is: {}".format(b.grad_fn))
+#+end_src
+
+#+RESULTS:
+: <PowBackward0 object at 0x7fd225149820>
+: None
+
+
+
+* PyTorch Tutorial
 
 ** Introduction to Tensors
 
@@ -50,7 +75,7 @@ labels = torch.rand(1,1000)
 #+end_src
 
 
-In order to pass the data into the model (/forward pass/) we can call the object like a function. The error can be simply computer by comparing with a given tensor with the correct output format.
+In order to pass the data into the model (/forward pass/) we can call the object like a function. The error can be simply   computer by comparing with a given tensor with the correct output format.
 
 #+begin_src jupyter-python
 prediction = model(data)
