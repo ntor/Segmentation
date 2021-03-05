@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import matplotlib.pyplot as plt
+import numpy as np
+from tqdm import tqdm  # implements a progress bar for iterations
 
 # import torch
 # from PIL import Image
-import numpy as np
-from tqdm import tqdm  # implements a "status bar" for iterations
 
 
 class ChanVese:
@@ -84,6 +84,7 @@ class ChanVese:
         theta=0.2,
         update_c_interval=20,
         show_iterations=False,
+        show_energy=False,
     ):
         step_range = range(steps)
         if show_iterations:
@@ -93,11 +94,12 @@ class ChanVese:
             self.single_step(lmb, epsilon, theta)
             if (i + 1) % update_c_interval == 0:
                 self.update_c()
-                print(
-                    "Energy: {}".format(
-                        CEN_energy(self.u, self.c[0], self.c[1], lmb, self._image_arr)
+                if show_energy:
+                    print(
+                        "Energy: {}".format(
+                            CEN_energy(self.u, self.c[0], self.c[1], lmb, self._image_arr)
+                        )
                     )
-                )
 
 
 def divergence(f):
@@ -179,7 +181,7 @@ def clip_vector_field(z, threshold=1):
 
     def criterion(v):
         norm = np.linalg.norm(v)
-        return ((v / norm) if norm > threshold else v)
+        return (v / norm) if norm > threshold else v
 
     return np.apply_along_axis(criterion, -1, z)
     # return z / ((1 + np.maximum(0, np.apply_along_axis(np.linalg.norm, -1, z) - 1))[...,np.newaxis])

@@ -48,8 +48,7 @@ def data_fitting(
             c1[i], c2[i] = ChanVese.get_segmentation_mean_colours(chanvese_batch[i], noisy_batch[i])
 
     chanvese_term = lambda_chanvese * (
-        (noisy_batch - c1.unsqueeze(1).unsqueeze(2).unsqueeze(3)).square()
-        - (noisy_batch - c2.unsqueeze(1).unsqueeze(2).unsqueeze(3)).square()
+        (noisy_batch - c1.unsqueeze(1)).square() - (noisy_batch - c2.unsqueeze(1)).square()
     )  # [batchsize, 1, height, width]
 
     # calculate alpha implicity from u, lambda, c1, and c2?
@@ -71,8 +70,7 @@ def data_fitting(
     integral over domain is just done by taking the mean, should just correspond to scaling lambda_reg accordingly in reconstruct (below)
     """
     datafitting_term = (
-        chanvese_term * chanvese_batch
-        + alpha.unsqueeze(1).unsqueeze(2).unsqueeze(3) * penality_term
+        chanvese_term * chanvese_batch + alpha.unsqueeze(1) * penality_term
     ).mean(
         (1, 2, 3)
     )  # [batchsize]
