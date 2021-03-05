@@ -3,23 +3,12 @@ import torch
 import torch.nn.functional as F
 import ClassFiles.ChanVese as ChanVese
 
-"""
-the regularisation parameter lambda CANNOT be initialised in the same way for segmentation as for denoising
-"""
-"""
-the function unreg_mini in Sebastian's paper shouldn't need to be redone here, as chanvese should already be a good starting point for reconstruction
-"""
 
+# TODO: Initialisation of lambda?
 
-"""
-must recalculate data fitting term in pytorch, so we can compute gradients
-"""
-"""
-I THINK THIS IS THE IMPLEMENTATION MIKE WANTED
-"""
+# REVIEW: Why "chanvese_batch"? Wouldn't "u_batch" be a better fit?
 
-
-def data_fitting(
+def data_fitting_penalty(
     chanvese_batch,
     noisy_batch,
     lambda_chanvese=1,
@@ -28,46 +17,57 @@ def data_fitting(
     c2=None,
     alpha=None,
 ):
+    """Calculates the data-fitting term for the Chan-Esedoglu-Nikolova functional
+    and adds a penality term, which penalises values outside [0,1].
+
+    Parameters:
+
+    'chanvese_batch' (Tensor): Minibatch of the "characteristic functions"
+    ("u"). Expected shape is [batchsize, 1, height, width].
+
+    'noisy_batch' (Tensor): Minibatch of original images.
+    Expected shape is [batchsize, 1, height, width].
+
+    'threshold' (float): Segmentation threshold (for the purpose of calculating
+    c1, c2 from chanvese_batch
+
+    'alpha' (float): Positive constant controlling strength of the penality.
+
     """
-    chanvese_batch & noisy_batch must a torch.tensor (ideally on gpu) of size [batchsize, 1, height, width]
-    noisy_batch contains the corresponding noisy images to chanvese_batch
-    threshold is used to find the segmentation boundary (for the purpose of calculating c1, c2) from chanvese_batch
-    """
+
     assert chanvese_batch.size() == noisy_batch.size()
     assert chanvese_batch.size(1) == 1  # require greyscale image, i.e. only one channel
 
     batchsize = chanvese_batch.size(0)
 
     # Estimate c1, c2 from u. Do NOT backpropagate along them.
+    # REVIEW: Does this implicity do backpropagation? Maybe calculate c1, c2
+    # externally in the optimisation loop?
     if c1 is None or c2 is None:
         c1, c2 = np.zeros(batchsize), np.zeros(batchsize)
         for i in range(batchsize):
             c1[i], c2[i] = ChanVese.get_segmentation_mean_colours(chanvese_batch[i], noisy_batch[i])
 
-    # TODO: Put into external function in ChanVese.py
-    # Actually not "Chan-Vese" but "Chan-Esedoglu-Nikolova"
     chanvese_term = lambda_chanvese * (
         (noisy_batch - c1.unsqueeze(1)).square() - (noisy_batch - c2.unsqueeze(1)).square()
     )  # [batchsize, 1, height, width]
 
-    # calculate alpha implicity from u, lambda, c1, and c2?
-    # REVIEW: Maybe don't use "alpha", as it's used for the Adam hyperparameters in the paper
+    # REVIEW: Better to drop the [0,1] penality and just clip?
 
     # I DON'T THINK we want to backprop along alpha when performing the
     # reconstruction (algorithm 2), only relevant when alpha is calculated
-    # implicitly hence .detach() below
+    # implicitly, hence .detach() below
     if alpha is None:
-        alpha = (
-            chanvese_term.detach().abs().max(3)[0].max(2)[0].max(1)[0]
-        )  # [batchsize]
+        # Calculate supremum-norm of each sample (--> [batchsize])
+        alpha = chanvese_term.detach().abs().flatten(start_dim=1).max(dim=1)[0]
 
-    penality_term = 2 * (
-        (chanvese_batch - 0.5).abs() - 1
+    penality_term = torch.nn.Threshold(0, 0)(
+        2 * ((chanvese_batch - 0.5).abs() - 1)
     )  # [batchsize, 1, height, width]
-    penality_term = penality_term * (penality_term > 0)  # [batchsize, 1, height, width]
 
     # integral over domain is just done by taking the mean, should just
     # correspond to scaling lambda_reg accordingly in reconstruct (below)
+    # REVIEW: Is this actually correct?
     datafitting_term = (
         chanvese_term * chanvese_batch + alpha.unsqueeze(1) * penality_term
     ).mean((1, 2, 3))
@@ -76,12 +76,12 @@ def data_fitting(
     return datafitting_term  # [batchsize]
 
 
-"""
-ALGORITHM 2:
-simultaneously perform a number of gradient descent steps on a full batch of chanvese segmentations, or already partialy reconstructed segmentations
-(both would take the argument chanvese_batch below)
-noisy_batch contains the corresponding noisy images to chanvese_batch (for the purpose of the datafitting term above)
-"""
+""" ALGORITHM 2: simultaneously perform a number of gradient descent steps on a
+full batch of chanvese segmentations, or already partialy reconstructed
+segmentations (both would take the argument chanvese_batch below)
+
+noisy_batch contains the corresponding noisy images to chanvese_batch (for the
+purpose of the datafitting term above) """
 
 
 def reconstruct(
@@ -106,7 +106,7 @@ def reconstruct(
         """
         data_fitting function not yet implemented
         """
-        datafitting = data_fitting(reconstructed_batch, noisy_batch_copy)  # [batchsize]
+        datafitting = data_fitting_penalty(reconstructed_batch, noisy_batch_copy)  # [batchsize]
         regularising = NN(reconstructed_batch)  # [batchsize]
 
         error = datafitting + lambda_reg * regularising  # [batchsize]
