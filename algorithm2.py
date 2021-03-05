@@ -38,24 +38,24 @@ def data_fitting(
 
     batchsize = chanvese_batch.size(0)
 
-    # calculate c1, c2 implicity from u
-    """
-    I DO THINK we want to backprop along c1, c2 when performing the reconstruction (algorithm 2), only relevant when c1, c2 are calculated implicitly
-    """
+    # Estimate c1, c2 from u. Do NOT backpropagate along them.
     if c1 is None or c2 is None:
         c1, c2 = np.zeros(batchsize), np.zeros(batchsize)
         for i in range(batchsize):
             c1[i], c2[i] = ChanVese.get_segmentation_mean_colours(chanvese_batch[i], noisy_batch[i])
 
+    # TODO: Put into external function in ChanVese.py
+    # Actually not "Chan-Vese" but "Chan-Esedoglu-Nikolova"
     chanvese_term = lambda_chanvese * (
         (noisy_batch - c1.unsqueeze(1)).square() - (noisy_batch - c2.unsqueeze(1)).square()
     )  # [batchsize, 1, height, width]
 
     # calculate alpha implicity from u, lambda, c1, and c2?
-    """
-    I DON'T THINK we want to backprop along alpha when performing the reconstruction (algorithm 2), only relevant when alpha is calculated implicitly
-    hence .detach() below
-    """
+    # REVIEW: Maybe don't use "alpha", as it's used for the Adam hyperparameters in the paper
+
+    # I DON'T THINK we want to backprop along alpha when performing the
+    # reconstruction (algorithm 2), only relevant when alpha is calculated
+    # implicitly hence .detach() below
     if alpha is None:
         alpha = (
             chanvese_term.detach().abs().max(3)[0].max(2)[0].max(1)[0]
@@ -66,14 +66,12 @@ def data_fitting(
     )  # [batchsize, 1, height, width]
     penality_term = penality_term * (penality_term > 0)  # [batchsize, 1, height, width]
 
-    """
-    integral over domain is just done by taking the mean, should just correspond to scaling lambda_reg accordingly in reconstruct (below)
-    """
+    # integral over domain is just done by taking the mean, should just
+    # correspond to scaling lambda_reg accordingly in reconstruct (below)
     datafitting_term = (
         chanvese_term * chanvese_batch + alpha.unsqueeze(1) * penality_term
-    ).mean(
-        (1, 2, 3)
-    )  # [batchsize]
+    ).mean((1, 2, 3))
+    # --> [batchsize]
 
     return datafitting_term  # [batchsize]
 
