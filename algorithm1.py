@@ -43,16 +43,16 @@ def train(
     # not sure why Sebastian doesn't use Adam, but hey
     optimiser = optim.RMSprop(NN.parameters(), lr=lr)
     
-    
+    # REVIEW: Just one dataloader (for Lucas' pleasure)
     groundtruth_loader = get_generated_dataloader('train', 'clean', batch_size)
     chanvese_loader = get_generated_dataloader('train', 'chan-vese', batch_size)
     
-    eval_groundtruth_loader = get_generated_dataloader('eval', 'clean', batch_size = 100)
-    eval_chanvese_loader = get_generated_dataloader('eval', 'chan-vese', batch_size = 100)
-    
+    eval_groundtruth_loader = get_generated_dataloader('eval', 'clean', batch_size=100, shuffle=False)
+    eval_chanvese_loader = get_generated_dataloader('eval', 'chan-vese', batch_size=100, shuffle=False)
     
     eval_groundtruth_batch = iter(eval_groundtruth_loader).next()[0].to(device)
     eval_chanvese_batch = iter(eval_chanvese_loader).next()[0].to(device)
+
     with torch.no_grad():
         groundtruth_mean_value = NN(eval_groundtruth_batch).mean().item()
         chanvese_mean_value = NN(eval_chanvese_batch).mean().item()

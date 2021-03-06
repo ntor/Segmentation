@@ -7,7 +7,11 @@ from torch.utils.data import DataLoader
 
 # Path constants used to load the generated images. See
 # 'get_generated_dataloader' for more information.
-GENERATED_DATA_PATH = {"train": "./train/images/", "eval": "./eval/images/"}
+GENERATED_DATA_PATH = {
+    "train": "./train/images/",
+    "eval": "./eval/images/"
+}
+
 GENERATED_DATA_FOLDERS = {
     "clean": "clean/",
     "dirty": "dirty/",

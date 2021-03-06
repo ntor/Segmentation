@@ -1,12 +1,13 @@
+#!/usr/bin/env python3
+
 import numpy as np
 import torch
-import torch.nn.functional as F
 import ClassFiles.ChanVese as ChanVese
-
+# import torch.nn.functional as F
 
 # TODO: Initialisation of lambda?
-
 # REVIEW: Why "chanvese_batch"? Wouldn't "u_batch" be a better fit?
+
 
 def data_fitting_penalty(
     chanvese_batch,
@@ -41,10 +42,10 @@ def data_fitting_penalty(
     batchsize = chanvese_batch.size(0)
 
     # Estimate c1, c2 from u. Do NOT backpropagate along them.
-    # REVIEW: Does this implicity do backpropagation? Maybe calculate c1, c2
+    # REVIEW: Does this implicitly induce backpropagation? Maybe calculate c1, c2
     # externally in the optimisation loop?
     if c1 is None or c2 is None:
-        c1, c2 = np.zeros(batchsize), np.zeros(batchsize)
+        c1, c2 = torch.zeros(batchsize), torch.zeros(batchsize)
         for i in range(batchsize):
             c1[i], c2[i] = ChanVese.get_segmentation_mean_colours(chanvese_batch[i], noisy_batch[i])
 
@@ -77,7 +78,7 @@ def data_fitting_penalty(
 
 
 """ ALGORITHM 2: simultaneously perform a number of gradient descent steps on a
-full batch of chanvese segmentations, or already partialy reconstructed
+full batch of chanvese segmentations, or already partially reconstructed
 segmentations (both would take the argument chanvese_batch below)
 
 noisy_batch contains the corresponding noisy images to chanvese_batch (for the
