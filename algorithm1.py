@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import TensorDataset, DataLoader
+from ClassFiles.DataLoader import get_generated_dataloader
 
 """ for now we assume we generate all training data beforehand as numpy arrays.
 we then convert to pytorch tensors and store on the cpu memory, converting to
@@ -12,19 +12,19 @@ training data generation on the gpu using pytorch's linear algebra, and generate
 it in situ while training """
 
 
-# REVIEW Maybe we should directly provide the training data via DataLoader's?
+
 def train(
-    NN,
-    groundtruth_numpy,
-    chanvese_numpy,
-    epochs=7,
-    batch_size=100,
+    NN, SAVE_PATH = None
+    epochs=100,
+    batch_size=20,
     mu=20,
     lr=0.0001,
     device="cuda:0" if torch.cuda.is_available() else "cpu",
 ):
     """
     NN is the neural network, e.g. could initialise by NN = SebastianConvNet(1, 256, 256)
+    
+    SAVE_PATH is a string, where to save the parameters of the NN after training is complete (if None then doesn't save)
 
     groundtruth_numpy is numpy array of [batchsize, image_channels,
     image_height, image_width] groundtruth segmentations
@@ -42,28 +42,37 @@ def train(
     NN.to(device)
     # not sure why Sebastian doesn't use Adam, but hey
     optimiser = optim.RMSprop(NN.parameters(), lr=lr)
-
-    # object to allow easy access to batches of training data
-    dataset = DataLoader(
-        TensorDataset(
-            torch.from_numpy(groundtruth_numpy).float(),
-            torch.from_numpy(chanvese_numpy).float(),
-        ),
-        batch_size=batch_size,
-        pin_memory=True,
-        drop_last=True,
-    )
-
+    
+    
+    groundtruth_loader = get_generated_dataloader('train', 'clean', batch_size)
+    chanvese_loader = get_generated_dataloader('train', 'chan-vese', batch_size)
+    
+    eval_groundtruth_loader = get_generated_dataloader('eval', 'clean', batch_size = 100)
+    eval_chanvese_loader = get_generated_dataloader('eval', 'chan-vese', batch_size = 100)
+    
+    
+    eval_groundtruth_batch = iter(eval_groundtruth_loader).next()[0].to(device)
+    eval_chanvese_batch = iter(eval_chanvese_loader).next()[0].to(device)
+    with torch.no_grad():
+        groundtruth_mean_value = NN(eval_groundtruth_batch).mean().item()
+        chanvese_mean_value = NN(eval_chanvese_batch).mean().item()
+    print('untrained performance', groundtruth_mean_value, chanvese_mean_value)
+    
     for i in range(epochs):
         """
         haven't got a log keeping track of training progress at the moment
         """
-        for groundtruth_batch, chanvese_batch in dataset:
-            """
-            don't currently do any shuffling of the dataset, just pass through the
-            entire dataset (in batches), once per epoch not sure what Sebastian
-            does"""
-
+        
+        
+        assert len(groundtruth_loader) == len(chanvese_loader)
+        
+        groundtruth_iter = iter(groundtruth_loader)
+        chanvese_iter = iter(chanvese_loader)
+        
+        for i in range(len(groundtruth_loader)):
+            groundtruth_batch = groundtruth_iter.next()[0]
+            chanvese_batch = chanvese_iter.next()[0]
+            
             assert groundtruth_batch.size() == chanvese_batch.size()
 
             groundtruth_batch = groundtruth_batch.to(device)
@@ -72,7 +81,7 @@ def train(
             batchsize = groundtruth_batch.size(0)
 
             # REVIEW: Unsqueezing over the 1-axis is enough for batchwise multiplication
-            epsilon = torch.rand([batchsize], device=device).unsqueeze(1)
+            epsilon = torch.rand([batchsize], device=device).unsqueeze(1).unsqueeze(2).unsqueeze(3)
 
             intermediate_batch = (
                 epsilon * groundtruth_batch + (1 - epsilon) * chanvese_batch
@@ -108,5 +117,15 @@ def train(
             optimiser.zero_grad()
             loss.backward()
             optimiser.step()
+        
+        eval_groundtruth_batch = iter(eval_groundtruth_loader).next()[0].to(device)
+        eval_chanvese_batch = iter(eval_chanvese_loader).next()[0].to(device)
+        with torch.no_grad():
+            groundtruth_mean_value = NN(eval_groundtruth_batch).mean().item()
+            chanvese_mean_value = NN(eval_chanvese_batch).mean().item()
+        print('done epoch', groundtruth_mean_value, chanvese_mean_value)
+    
+    if SAVE_PATH != None:
+        torch.save(NN.state_dict(), SAVE_PATH)
 
     return NN.to("cpu")
