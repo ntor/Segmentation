@@ -9,7 +9,8 @@
   + [X] Artifical image generator (polygons, ellipses, noise) [James]
   + [X] Class wrapper for generator [Peter]
   + [X] Dataloader Framework [Peter]
-  + [ ] Storing and loading segmentation data
+  + [X] Code for generating training data [James]
+  + [ ] Storing and loading segmentation data (done?)
   + [ ] Data Augmentation
 - [X] Implement Chan-Vese
   - [X] Notebook proof-of-principle [Peter]
@@ -19,16 +20,20 @@
   + [X] Classifier network [Lucas]
   + [X] Reconstruction routine (Algorithm 2) [Lucas]
   + [ ] Test the code
-- [ ] Access to computation resources
+- [ ] Logging, quality, etc.
+  + [ ] Implement a logging interface
+  + [ ] Extend ~tqdm~ to obtain a "progess interface" for quality measures, energy, etc.
+  + [ ] Implement "quality" quantities (Jaccard/IOU, DICE, Haussdorf)
+- [ ] Estimation of $\lambda$?
+- [ ] Compare different classifier architectures
 - [ ] Git LFS handling for datasets
-- [ ] Check different classifier architectures
-- [ ] Implement "quality" quantities (Jaccard/IOU, DICE, Haussdorf)
-- [ ] Extend ~tqdm~ to obtain a "progess interface" for quality measures, energy, etc.
+- [ ] Access to computation resources
 
 
 * TODO Jobs
-- [ ] Move test files and notebooks to an independent directory, but change exec. path
 - [ ] Rename files according to conventions
+- [ ] Move test files and notebooks to an independent directory, but change exec. path
+- [ ] Put the algorithm2 stuff into a framework in line with ChanVese.py
 
 
 * Overview
