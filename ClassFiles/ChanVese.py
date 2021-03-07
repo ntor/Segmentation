@@ -58,11 +58,6 @@ class ChanVese:
     def update_c(self):
         """Update the average colours in the segmentation domain and its complement. See
         'get_segmentation_mean_colours' for more information.
-
-        Parameters:
-
-        'segmentation_threshold' (float): in [0,1], used to determine the
-        segmentation boundary as the level set of 'self.u' at this level
         """
         self.c = get_segmentation_mean_colours(
             self.u, self._image_arr, self.segmentation_threshold
@@ -139,10 +134,20 @@ def CEN_energy(u, c1, c2, lambd, image_arr):
     TV_energy = np.sum(
         np.apply_along_axis(np.linalg.norm, -1, np.stack(np.gradient(u), axis=-1))
     )
-
-    data_fitting = np.sum((image_arr - c1) ** 2 * u + (image_arr - c2) ** 2 * (1 - u))
-
+    data_fitting = CEN_data_fitting_energy(u, c1, c2, image_arr)
     return TV_energy + lambd * data_fitting
+
+
+def CEN_data_fitting_energy(u, c1, c2, image_arr):
+    """Returns the data-fitting term, measuring how well 'u' segments 'image_arr'
+    into regions of colour 'c1' and 'c2'. For more information on the parameters
+    take a look at 'CEN_energy'.
+
+    This function is compatible both with numpy's ndarrays and
+    torch's Tensor classes.
+
+    """
+    return ((image_arr - c1) ** 2 * u + (image_arr - c2) ** 2 * (1 - u)).sum()
 
 
 def get_segmentation_mean_colours(u, image_arr, threshold=0.5):

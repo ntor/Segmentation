@@ -24,7 +24,7 @@
   + [ ] Implement a logging interface
   + [ ] Extend ~tqdm~ to obtain a "progess interface" for quality measures, energy, etc.
   + [ ] Implement "quality" quantities (Jaccard/IOU, DICE, Haussdorf)
-- [ ] Estimation of $\lambda$?
+- [ ] Estimation of regularisation parameter
 - [ ] Compare different classifier architectures
 - [ ] Git LFS handling for datasets
 - [ ] Access to computation resources
@@ -34,6 +34,11 @@
 - [ ] Rename files according to conventions
 - [ ] Move test files and notebooks to an independent directory, but change exec. path
 - [ ] Put the algorithm2 stuff into a framework in line with ChanVese.py
+- [ ] Optimising via retain_graph, etc.?
+- [ ] Optional reconstruction via clipping w/o penalty
+
+* Ideas
+- Abstract framework with "Regulariser" classes?
 
 
 * Overview

@@ -93,20 +93,19 @@ def reconstruct(
     NN is the learnt regulariser
     lambda_reg is how much we weight the regularising term (not the datafitting term) when reconstructing the solution according to algorithm 2
     """
+    # transfer chanvese_batch and noisy_batch to same device NN is stored on,
+    # detach just incase
     device = next(NN.parameters()).device  # trick to find device NN is stored on
-    reconstructed_batch = chanvese_batch.to(
-        device
-    ).detach()  # transfer chanvese_batch to same device NN is stored on, detach just incase
-    noisy_batch_copy = noisy_batch.to(
-        device
-    )  # transfer noisy_batch to same device NN is stored on
+    reconstructed_batch = chanvese_batch.to(device).detach()
+    noisy_batch_copy = noisy_batch.to(device)
 
     for i in range(reconstruction_steps):
-        reconstructed_batch.requires_grad = True  # set requires_grad to True, gradients are initialised at zero, and entire backprop graph will be recreated (not the most efficient way, as autograd graph has to be recreated each time)
+        # set requires_grad to True, gradients are initialised at zero, and
+        # entire backprop graph will be recreated (not the most efficient way,
+        # as autograd graph has to be recreated each time)
+        reconstructed_batch.requires_grad = True
 
-        """
-        data_fitting function not yet implemented
-        """
+        # REVIEW: data_fitting function not yet implemented
         datafitting = data_fitting_penalty(reconstructed_batch, noisy_batch_copy)  # [batchsize]
         regularising = NN(reconstructed_batch)  # [batchsize]
 
