@@ -54,6 +54,6 @@ class DeepSegmentation:
         data_fitting = cv.CEN_data_fitting_energy(
             self.u, self.c[0], self.c[1], self._image_arr
         )
-        error = data_fitting + lmb_reg * self.regulariser(u)
+        error = data_fitting + lmb_reg * self.regulariser(u.unsqueeze(0).unsqueeze(0))
         gradients = torch.autograd.grad(error, self.u)[0]
         self.u = (self.u - epsilon * gradients).detach()
