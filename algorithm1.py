@@ -59,13 +59,9 @@ def train(
     print('untrained performance', groundtruth_mean_value, chanvese_mean_value)
     
     for i in range(epochs):
-        """
-        haven't got a log keeping track of training progress at the moment
-        """
-        
-        
         assert len(groundtruth_loader) == len(chanvese_loader)
-        
+
+        # REVIEW: Shuffling works?
         groundtruth_iter = iter(groundtruth_loader)
         chanvese_iter = iter(chanvese_loader)
         
@@ -80,7 +76,7 @@ def train(
 
             batchsize = groundtruth_batch.size(0)
 
-            # REVIEW: Unsqueezing over the 1-axis is enough for batchwise multiplication
+            # REVIEW: There MUST be a nicer way
             epsilon = torch.rand([batchsize], device=device).unsqueeze(1).unsqueeze(2).unsqueeze(3)
 
             intermediate_batch = (
@@ -93,7 +89,6 @@ def train(
             chanvese_out = NN(chanvese_batch)  # [batchsize]
             intermediate_out = NN(intermediate_batch)  # [batchsize]
 
-            # REVIEW: Why mean() and not sum()?
             # calculate the loss
             wasserstein_loss = (groundtruth_out - chanvese_out).mean()  # [1]
 

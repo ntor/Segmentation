@@ -35,7 +35,7 @@
 - [ ] Animation of segmentation contour during regularisation
 - [ ] Rewrite ChanVese in pytorch
 - Organisation (optional)
-  + [ ] Move test files and notebooks to an independent directory, but change exec. path
+  + [X] Move test files and notebooks to an independent directory, but change exec. path
   + [ ] Rename files according to conventions
   + [ ] Git LFS handling for datasets
   + [ ] Access to computation resources

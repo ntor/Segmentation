@@ -23,6 +23,8 @@ NOTE: ImageFolder datasets are tuples,
 [0] is the tensor image we want,
 [1] is the Folder index it came from (suppose to be used for labels like 'dogs', 'cats'), for us they are all just 0
 """
+
+
 def get_generated_dataloader(train_or_eval, data_type, batch_size=20, shuffle=True):
     """Returns a torch.utils.data.DataLoader object for iterating over the generated
     data. The images are chosen from one of the subfolders in
