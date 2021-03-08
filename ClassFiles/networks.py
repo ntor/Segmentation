@@ -7,9 +7,7 @@ import torch.nn.functional as F
 currently using identical architecture to the image denoising ConvNet in Sebastian's paper
 """
 
-"""
-large output = chanvese, small output = groundtruth
-"""
+
 class SebastianConvNet(nn.Module):
     def __init__(
         self, in_channels, in_height, in_width
