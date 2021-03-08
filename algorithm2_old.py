@@ -34,6 +34,8 @@ def data_fitting(
     """
     assert chanvese_batch.size() == noisy_batch.size()
     assert chanvese_batch.size(1) == 1  # require greyscale image, i.e. only one channel
+    
+    device = chanvese_batch.device
 
     # calculate c1, c2 implicity from u
     """
@@ -41,11 +43,9 @@ def data_fitting(
     Actually not a problem, since no operation below is going to preserve requires_grad = true
     """
     if c1 == None:
-        c1 = (noisy_batch * (chanvese_batch > threshold)).mean((1, 2, 3))  # [batchsize]
+        c1 = (noisy_batch * (chanvese_batch > threshold)).sum((1, 2, 3)) / (chanvese_batch > threshold).sum((1, 2, 3))  # [batchsize]
     if c2 == None:
-        c2 = (noisy_batch * (chanvese_batch <= threshold)).mean(
-            (1, 2, 3)
-        )  # [batchsize]
+        c2 = (noisy_batch * (chanvese_batch <= threshold)).sum((1, 2, 3)) / (chanvese_batch <= threshold).sum((1, 2, 3))  # [batchsize]
 
     chanvese_term = lambda_chanvese * (
         (noisy_batch - c1.unsqueeze(1).unsqueeze(2).unsqueeze(3)).square()
@@ -89,7 +89,7 @@ noisy_batch contains the corresponding noisy images to chanvese_batch (for the p
 
 
 def reconstruct(
-    chanvese_batch, noisy_batch, NN, lambda_reg, epsilon, reconstruction_steps=1
+    chanvese_batch, noisy_batch, NN, lambda_reg, epsilon, reconstruction_steps=1, c1 = None, c2 = None
 ):
     """
     chanvese_batch & noisy_batch must be a torch.tensor of size [batchsize, channels, height, width]
@@ -110,13 +110,17 @@ def reconstruct(
         """
         data_fitting function not yet implemented
         """
-        datafitting = data_fitting(reconstructed_batch, noisy_batch_copy)  # [batchsize]
+        datafitting = data_fitting(reconstructed_batch, noisy_batch_copy, c1 = c1, c2 = c2)  # [batchsize]
         regularising = NN(reconstructed_batch)  # [batchsize]
 
         error = datafitting + lambda_reg * regularising  # [batchsize]
         error = error.sum()  # [1], trick to compute all gradients in one go
 
         gradients = torch.autograd.grad(error, reconstructed_batch)[0]
+        
+        """
+        NN is larger on chanvese, so want to decrease it's value!!!!
+        """
         reconstructed_batch = (
             reconstructed_batch - epsilon * gradients
         ).detach()  # detaching from previous autograd which also sets requires_grad to False
@@ -130,6 +134,46 @@ def reconstruct(
 """
 a quick function for evaluating the quality of the reconstructed segmentation according to the L2 difference between it and groundtruth
 """
+
+
+def shitty_reconstruct(
+    chanvese_batch, noisy_batch, NN, epsilon, reconstruction_steps=1
+):
+    """
+    chanvese_batch & noisy_batch must be a torch.tensor of size [batchsize, channels, height, width]
+    NN is the learnt regulariser
+    lambda_reg is how much we weight the regularising term (not the datafitting term) when reconstructing the solution according to algorithm 2
+    """
+    device = next(NN.parameters()).device  # trick to find device NN is stored on
+    reconstructed_batch = chanvese_batch.to(
+        device
+    ).detach()  # transfer chanvese_batch to same device NN is stored on, detach just incase
+    noisy_batch_copy = noisy_batch.to(
+        device
+    )  # transfer noisy_batch to same device NN is stored on
+
+    for i in range(reconstruction_steps):
+        reconstructed_batch.requires_grad = True  # set requires_grad to True, gradients are initialised at zero, and entire backprop graph will be recreated (not the most efficient way, as autograd graph has to be recreated each time)
+        
+        regularising = NN(reconstructed_batch)  # [batchsize]
+
+        error = regularising  # [batchsize]
+        error = error.sum()  # [1], trick to compute all gradients in one go
+
+        gradients = torch.autograd.grad(error, reconstructed_batch)[0]
+        
+        """
+        NN is larger on chanvese, so want to decrease it's value!!!!
+        """
+        reconstructed_batch = (
+            reconstructed_batch - epsilon * gradients
+        ).detach()  # detaching from previous autograd which also sets requires_grad to False
+
+    return (
+        reconstructed_batch.to(chanvese_batch.device),
+        noisy_batch,
+    )  # send back to original device
+
 
 
 def quality(reconstructed_batch, groundtruth_batch):
@@ -169,7 +213,7 @@ def minimum(chanvese_batch, noisy_batch, groundtruth_batch, NN, lambda_reg, epsi
     while todo_mask.sum():
         steps += todo_mask
 
-        chanvese_todo = reconstruct(chanvese_todo, noisy_todo, NN, lambda_reg, epsilon)[0]
+        chanvese_todo, _ = reconstruct(chanvese_todo, noisy_todo, NN, lambda_reg, epsilon)[0]
         quality_new = quality(chanvese_todo, groundtruth_todo)
         done_mask = quality_new > quality_prev
 

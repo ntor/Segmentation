@@ -1,0 +1,413 @@
+# --------------------------
+#+TITLE: Notebook Playground
+# --------------------------
+
+#+LATEX_CLASS: scrartcl
+
+* Understanding Autograd
+
+[[https://blog.paperspace.com/pytorch-101-understanding-graphs-and-automatic-differentiation/][This]] blog entry explains the connection between computational graphs and the backpropagation.
+
+#+begin_src jupyter-python
+import torch
+
+# Create a tensor with gradient tracking and derive another tensor.
+a = torch.Tensor([1])
+a.requires_grad = True
+b = a**2
+
+# Show that b remembers its origins:
+print("Is 'a' a leaf? {}".format(a.is_leaf))
+print("Its grad_fn is: {}".format(a.grad_fn))
+
+print("Is 'b' a leaf? {}".format(b.is_leaf))
+print("Its grad_fn is: {}".format(b.grad_fn))
+#+end_src
+
+#+RESULTS:
+: Is 'a' a leaf? True
+: Its grad_fn is: None
+: Is 'b' a leaf? False
+: Its grad_fn is: <PowBackward0 object at 0x7fd221249ac0>
+
+
+We can do backward propagation and obtain the gradients of the loss (in this case ~b~) w.r.t. the leaves (that is, ~a~).
+
+#+begin_src jupyter-python
+b.backward()
+print("Gradient d(a**2)/da at a=1: {}".format(a.grad))
+#+end_src
+
+#+RESULTS:
+: Gradient d(a**2)/da at a=1: tensor([2.])
+
+
+Alternatively, ~autograd~ allows you to compute gradients between tensors directly via ~torch.autograd.grad~:
+
+#+begin_src jupyter-python
+x = torch.Tensor([1,1])
+x.requires_grad = True
+y = (2 * x)
+
+print(torch.autograd.grad(y.sum(),x))
+#+end_src
+
+#+RESULTS:
+: (tensor([2., 2.]),)
+
+* PyTorch Tutorial
+
+** Introduction to Tensors
+
+Tensors in torch are handled like ndarray in numpy.
+
+#+begin_src jupyter-python
+import torch
+import numpy as np
+
+# initialisation from data
+data = [[1, 2],[3, 4]]
+x_data = torch.tensor(data)
+x_ones = torch.ones_like(x_data)
+
+tensor = torch.rand(3,4)
+
+print(f"Shape of tensor: {tensor.shape}")
+print(f"Datatype of tensor: {tensor.dtype}")
+print(f"Device tensor is stored on: {tensor.device}")
+#+end_src
+
+
+Optionally, one can move the tensor to the GPU resources using cuda.
+
+#+begin_src jupyter-python
+if torch.cuda.is_available():
+  tensor = tensor.to('cuda')
+
+print(f"Device tensor is stored on: {tensor.device}")
+#+end_src
+
+
+
+** Initialising a Model and Backward Propagation
+
+In the following we take a pretrained ~resnet~ and show how to perform a single training step.
+
+#+begin_src jupyter-python
+import torch, torchvision
+model = torchvision.models.resnet18(pretrained = True)
+data = torch.rand(1,3,64,64)
+labels = torch.rand(1,1000)
+#+end_src
+
+
+In order to pass the data into the model (/forward pass/) we can call the object like a function. The error can be simply   computer by comparing with a given tensor with the correct output format.
+
+#+begin_src jupyter-python
+prediction = model(data)
+loss = (prediction - labels).sum()
+loss.backward()                 # calculates gradient w.r.t. parameters and
+                                # stores it in the loss.grad attribute
+#+end_src
+
+
+This procedure can be automatised using "optimisers". One example is stochastic gradient descent (~torch.optim.SGD~).
+
+#+begin_src jupyter-python
+optim = torch.optim.SGD(model.parameters(), lr=1e-2, momentum=0.9)
+optim.step()
+#+end_src
+
+
+*** Autograd
+
+The following just gives a few examples of how pytorch manages gradients, backward propagation, etc.
+
+#+begin_src jupyter-python
+import torch
+
+a = torch.tensor([2., 3.], requires_grad=True)
+b = torch.tensor([6., 4.], requires_grad=True)
+
+Q = 3*a**2 - b**2
+
+test = torch.tensor([1., 1.])
+Q.backward(gradient=test)
+
+print(9*a**2 == a.grad)
+print(-2*b == b.grad)
+#+end_src
+
+
+
+** Neural Networks
+
+The networks can be built "by hand", on top of the nn.Module class. In the following example, the different layers are initialised as attributes of the network's class. Then, a ~forward~ method is implemented, which automatically implies a ~backward~ method. The ~forward~ method describes how the different layers interact with each other.
+
+#+begin_src jupyter-python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class Net(nn.Module):
+
+    def __init__(self):
+        super(Net, self).__init__()
+        # 1 input image channel, 6 output channels, 3x3 square convolution
+        # kernel
+        self.conv1 = nn.Conv2d(1, 6, 3)
+        self.conv2 = nn.Conv2d(6, 16, 3)
+        # an affine operation: y = Wx + b
+        self.fc1 = nn.Linear(16 * 6 * 6, 120)  # 6*6 from image dimension
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
+
+    def forward(self, x):
+        # Max pooling over a (2, 2) window
+        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
+        # If the size is a square you can only specify a single number
+        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        x = x.view(-1, self.num_flat_features(x))
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+    def num_flat_features(self, x):
+        size = x.size()[1:]  # all dimensions except the batch dimension
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
+
+
+net = Net()
+print("The net's different layers:")
+print(net)
+#+end_src
+
+
+This sends a random input (32x32 bitmap) through our network and propagates the gradient of the output (tested against some random tensor) back through the network. If one wants to compute the backpropagated parameters this way, one has to be a bit careful and initialise the gradient to zero beforehand (~zero_grad~). Otherwise, the gradients obtained by successive calls of ~backward~ are accumulated (is this correct?).
+
+#+begin_src jupyter-python
+input = torch.randn(1,1, 32, 32)
+out = net(input)
+
+print(out)
+print(out.size())
+net.zero_grad()
+out.backward(torch.randn(1,10))
+#+end_src
+
+
+More practically, one would like to calculate the gradient of a loss function with respect to some target. The following implements this using a random target and ~MSELoss~. It also inspects the computational graph that is implicitly stored with ~loss~. This is used for backpropagation.
+
+#+begin_src jupyter-python
+output = net(input)
+target = torch.randn(10)  # a dummy target, for example
+target = target.view(1, -1)  # make it the same shape as output
+criterion = nn.MSELoss()
+
+loss = criterion(output, target)
+print(loss)
+print(loss.grad_fn)
+print(loss.grad_fn.next_functions)
+print(loss.grad_fn.next_functions[0][0].next_functions)
+#+end_src
+
+
+The above code demonstrated how we can obtain the gradient of a loss function with respect to the networks parameters. In order to update the parameters, one may use a naive gradient descent:
+
+#+begin_src jupyter-python
+learning_rate = 0.01
+for f in net.parameters():
+    f.data.sub_(f.grad.data * learning_rate)
+#+end_src
+
+
+Alternatively, more elaborate optimisation schemes are available under the ~torch.optim~ package. Here, this is illustrated for stochastic gradient descent:
+
+#+begin_src jupyter-python
+import torch.optim as optim
+
+# create your optimizer
+optimizer = optim.SGD(net.parameters(), lr=0.01)
+
+# in your training loop:
+optimizer.zero_grad()   # zero the gradient buffers
+output = net(input)
+loss = criterion(output, target)
+loss.backward()
+optimizer.step()    # Does the update
+#+end_src
+
+
+
+
+** A simple classification network
+
+We set up two dataloaders from the CIFAR10 database. These provide an iterator that return the images in batches of four (as a tensor with values renormalised to lie in the interval [-1,1]).
+
+#+begin_src jupyter-python
+import torch
+import torchvision
+import torchvision.transforms as transforms
+
+# maps PILImage objects to tensors with range [0,1] and renormalises them to [-1,1]
+transform = transforms.Compose(
+    [transforms.ToTensor(),
+     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+                                        download=True, transform=transform)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
+                                          shuffle=True, num_workers=2)
+
+testset = torchvision.datasets.CIFAR10(root='./data', train=False,
+                                       download=True, transform=transform)
+testloader = torch.utils.data.DataLoader(testset, batch_size=4,
+                                         shuffle=False, num_workers=2)
+
+classes = ('plane', 'car', 'bird', 'cat',
+           'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+#+end_src
+
+We use the dataloader ~trainloader~ as an iterator to retrieve one batch of images (with labels) and display them.
+
+#+begin_src jupyter-python
+import matplotlib.pyplot as plt
+import numpy as np
+
+# functions to show an image
+
+
+def imshow(img):
+    img = img / 2 + 0.5     # unnormalize
+    npimg = img.numpy()
+    plt.imshow( np.transpose(npimg, (1, 2, 0)))
+    plt.show()
+
+
+# get some random training images
+dataiter = iter(trainloader)
+images, labels = dataiter.next()
+
+# show images
+imshow(torchvision.utils.make_grid(images))
+# print labels
+print(' '.join('%5s' % classes[labels[j]] for j in range(4)))
+#+end_src
+
+
+We would now like to define a neural network for image classification:
+
+#+begin_src jupyter-python
+import torch.nn as nn
+import torch.nn.functional as F
+
+
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 16 * 5 * 5)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+
+net = Net()
+#+end_src
+
+
+#+begin_src jupyter-python
+import torch.optim as optim
+
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+
+for epoch in range(3):  # loop over the dataset multiple times
+
+    running_loss = 0.0
+    for i, data in enumerate(trainloader, 0):
+        # get the inputs; data is a list of [inputs, labels]
+        inputs, labels = data
+
+        # zero the parameter gradients
+        optimizer.zero_grad()
+
+        # forward + backward + optimize
+        outputs = net(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        # print statistics
+        running_loss += loss.item()
+        if i % 2000 == 1999:    # print every 2000 mini-batches
+            print('[%d, %5d] loss: %.3f' %
+                  (epoch + 1, i + 1, running_loss / 2000))
+            running_loss = 0.0
+
+print('Finished Training')
+#+end_src
+
+#+begin_src jupyter-python
+images, labels = dataiter.next()
+
+# print images
+imshow(torchvision.utils.make_grid(images))
+print('GroundTruth: ', ' '.join('%5s' % classes[labels[j]] for j in range(4)))
+
+outputs = net(images)
+_, predicted = torch.max(outputs, 1)
+
+print('Predicted: ', ' '.join('%5s' % classes[predicted[j]]
+                              for j in range(4)))
+#+end_src
+
+
+#+begin_src jupyter-python
+correct = 0
+total = 0
+with torch.no_grad():
+    for data in testloader:
+        images, labels = data
+        outputs = net(images)
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+print('Accuracy of the network on the 10000 test images: %d %%' % (
+    100 * correct / total))
+#+end_src
+
+#+begin_src jupyter-python
+class_correct = list(0. for i in range(10))
+class_total = list(0. for i in range(10))
+with torch.no_grad():
+    for data in testloader:
+        images, labels = data
+        outputs = net(images)
+        _, predicted = torch.max(outputs, 1)
+        c = (predicted == labels).squeeze()
+        for i in range(4):
+            label = labels[i]
+            class_correct[label] += c[i].item()
+            class_total[label] += 1
+
+
+for i in range(10):
+    print('Accuracy of %5s : %2d %%' % (
+        classes[i], 100 * class_correct[i] / class_total[i]))
+#+end_src
