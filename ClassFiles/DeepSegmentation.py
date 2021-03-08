@@ -51,6 +51,17 @@ class DeepSegmentation:
         )
 
     def single_step(self, lmb_reg=1, epsilon=0.1):
+        """Performs a single gradient descent step for 'self.u' along the CEN
+        data-fitting term plus the regulariser term. After the gradient step, u
+        is clipped in order to lie in [0,1].
+
+        Parameters:
+
+        'lmb_reg' (float): Weight for the regulariser.
+
+        'epsilon' (float): Step size for gradient descent.
+        """
+
         self.u.requires_grad = True
         data_fitting = cv.CEN_data_fitting_energy(
             self.u, self.c[0], self.c[1], self._image_arr
@@ -61,6 +72,11 @@ class DeepSegmentation:
         self.u = torch.clamp(self.u, min=0.0, max=1.0)
 
     def run(self, steps, lmb_reg=1, epsilon=0.1, show_iterations=False):
+        """Runs 'steps' iteration of 'single_step' with same parameters 'lmb_reg' and
+        'epsilon', displaying the iterations with a loading bar if
+        'show_iterations' is True.
+
+        """
         step_range = range(steps)
         if show_iterations:
             step_range = tqdm(step_range)
