@@ -3,6 +3,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+# This file should collect methods for visualisation of segmentations and their
+# evolution during the optimisation process.
+
 
 def show_segmentation(image, u, segmentation_threshold=0.5):
     """Shows the level set contour of 'u' at level 'segmentation_threshold' on top of

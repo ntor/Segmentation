@@ -25,8 +25,6 @@
   + [ ] Implement "quality" quantities (Jaccard/IOU, DICE, Haussdorf)
 - [ ] Estimation of regularisation parameter
 - [ ] Compare different classifier architectures
-- [ ] Git LFS handling for datasets
-- [ ] Access to computation resources
 
 
 
@@ -39,6 +37,9 @@
 - Organisation (optional)
   + [ ] Move test files and notebooks to an independent directory, but change exec. path
   + [ ] Rename files according to conventions
+  + [ ] Git LFS handling for datasets
+  + [ ] Access to computation resources
+
 
 
 * Ideas
