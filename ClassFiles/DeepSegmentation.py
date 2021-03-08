@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pylot as plt
 import ChanVese as cv
 import torch
-
+import tqdm as tqdm
 
 class DeepSegmentation:
     def __init__(
@@ -54,6 +54,14 @@ class DeepSegmentation:
         data_fitting = cv.CEN_data_fitting_energy(
             self.u, self.c[0], self.c[1], self._image_arr
         )
-        error = data_fitting + lmb_reg * self.regulariser(u.unsqueeze(0).unsqueeze(0))
+        error = data_fitting + lmb_reg * self.regulariser(self.u.unsqueeze(0).unsqueeze(0))
         gradients = torch.autograd.grad(error, self.u)[0]
         self.u = (self.u - epsilon * gradients).detach()
+
+    def run(self, steps, lmb_reg=1, epsilon=0.1, show_iterations=False):
+        step_range = range(steps)
+        if show_iterations:
+            step_range = tqdm(step_range)
+            for i in step_range:
+                self.single_step(lmb_reg, epsilon)
+                self.update_c()
