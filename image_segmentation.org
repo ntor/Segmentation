@@ -10,7 +10,7 @@
   + [X] Class wrapper for generator [Peter]
   + [X] Dataloader Framework [Peter]
   + [X] Code for generating training data [James]
-  + [ ] Storing and loading segmentation data (done?)
+  + [X] Storing and loading segmentation data [James]
   + [ ] Data Augmentation
 - [X] Implement Chan-Vese
   - [X] Notebook proof-of-principle [Peter]
@@ -19,7 +19,6 @@
   + [X] Classifier training routine (Algorithm 1) [Lucas]
   + [X] Classifier network [Lucas]
   + [X] Reconstruction routine (Algorithm 2) [Lucas]
-  + [ ] Test the code
 - [ ] Logging, quality, etc.
   + [ ] Implement a logging interface
   + [ ] Extend ~tqdm~ to obtain a "progess interface" for quality measures, energy, etc.
@@ -30,12 +29,16 @@
 - [ ] Access to computation resources
 
 
+
 * TODO Jobs
-- [ ] Rename files according to conventions
-- [ ] Move test files and notebooks to an independent directory, but change exec. path
-- [ ] Put the algorithm2 stuff into a framework in line with ChanVese.py
-- [ ] Optimising via retain_graph, etc.?
+- [X] Put the algorithm2 stuff into a framework in line with ChanVese.py
+- [ ] Optimising backpropagation in reconstruction via retain_graph, etc.?
 - [ ] Optional reconstruction via clipping w/o penalty
+- [ ] Animation of segmentation contour during regularisation
+- [ ] Rewrite ChanVese in pytorch
+- Organisation (optional)
+  + [ ] Move test files and notebooks to an independent directory, but change exec. path
+  + [ ] Rename files according to conventions
 
 
 * Ideas

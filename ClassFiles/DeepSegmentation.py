@@ -5,10 +5,11 @@
 # - gradient descent routine with clipping and c1/c2-updating
 
 import numpy as np
-import matplotlib.pylot as plt
-import ChanVese as cv
+import matplotlib.pyplot as plt
+import ClassFiles.ChanVese as cv
 import torch
-import tqdm as tqdm
+from tqdm import tqdm
+
 
 class DeepSegmentation:
     def __init__(
@@ -30,7 +31,7 @@ class DeepSegmentation:
         else:
             self.u = torch.Tensor(u_init)
             self.c = cv.get_segmentation_mean_colours(
-                self.u, self.image_arr, self.segmentation_threshold
+                self.u, self._image_arr, self.segmentation_threshold
             )
 
     def show_segmentation(self):
@@ -57,6 +58,7 @@ class DeepSegmentation:
         error = data_fitting + lmb_reg * self.regulariser(self.u.unsqueeze(0).unsqueeze(0))
         gradients = torch.autograd.grad(error, self.u)[0]
         self.u = (self.u - epsilon * gradients).detach()
+        self.u = torch.clamp(self.u, min=0.0, max=1.0)
 
     def run(self, steps, lmb_reg=1, epsilon=0.1, show_iterations=False):
         step_range = range(steps)
