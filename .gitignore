@@ -3,3 +3,4 @@
 .auctex-auto/
 ClassFiles/__pycache__
 /.DS_Store
+/data/
