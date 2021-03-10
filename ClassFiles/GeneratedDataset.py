@@ -69,7 +69,7 @@ class ImageDataset(Dataset):
 
 
 class SegmentationDataset(Dataset):
-    def __init__(self, data_root, seg_type="dirty"):
+    def __init__(self, data_root, seg_type="chan-vese"):
         self.data_root = data_root
         self.seg_type = seg_type
         if not os.path.isdir(data_root):
