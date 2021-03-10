@@ -7,7 +7,11 @@ from torch.utils.data import DataLoader
 
 # Path constants used to load the generated images. See
 # 'get_generated_dataloader' for more information.
-GENERATED_DATA_PATH = {"train": "./train/images/", "eval": "./eval/images/"}
+GENERATED_DATA_PATH = {
+    "train": "./data/train/",
+    "eval": "./data/eval/"
+}
+
 GENERATED_DATA_FOLDERS = {
     "clean": "clean/",
     "dirty": "dirty/",
@@ -19,6 +23,10 @@ NOTE: ImageFolder datasets are tuples,
 [0] is the tensor image we want,
 [1] is the Folder index it came from (suppose to be used for labels like 'dogs', 'cats'), for us they are all just 0
 """
+
+def generate_data():
+
+
 def get_generated_dataloader(train_or_eval, data_type, batch_size=20, shuffle=True):
     """Returns a torch.utils.data.DataLoader object for iterating over the generated
     data. The images are chosen from one of the subfolders in
