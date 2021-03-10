@@ -2,10 +2,12 @@
 
 import numpy as np
 import os
+import torch
+from torchvision import transforms
 from torch.utils.data import Dataset
 from PIL import Image
-from ShapeGenerator import ShapeGenerator
-from ChanVese import ChanVese
+from ClassFiles.ShapeGenerator import ShapeGenerator
+from ClassFiles.ChanVese import ChanVese
 from tqdm import tqdm
 
 # This file implements two torch Dataset classes, 'ImageDataset' and
@@ -63,7 +65,7 @@ class ImageDataset(Dataset):
                 IMAGE_TYPE_NAMES[self.image_type],
             )
         )
-        return im
+        return transforms.ToTensor()(im)
 
 
 class SegmentationDataset(Dataset):
@@ -86,7 +88,7 @@ class SegmentationDataset(Dataset):
                 SEGMENTATION_TYPE_NAMES[self.seg_type],
             )
         )
-        return seg
+        return torch.Tensor(seg)
 
 
 def generate_data(times, root_dir, size=(128, 128), append=True):

@@ -7,10 +7,7 @@ from torch.utils.data import DataLoader
 
 # Path constants used to load the generated images. See
 # 'get_generated_dataloader' for more information.
-GENERATED_DATA_PATH = {
-    "train": "./data/train/",
-    "eval": "./data/eval/"
-}
+GENERATED_DATA_PATH = {"train": "./data/train/", "eval": "./data/eval/"}
 
 GENERATED_DATA_FOLDERS = {
     "clean": "clean/",
@@ -24,8 +21,6 @@ NOTE: ImageFolder datasets are tuples,
 [1] is the Folder index it came from (suppose to be used for labels like 'dogs', 'cats'), for us they are all just 0
 """
 
-def generate_data():
-
 
 def get_generated_dataloader(train_or_eval, data_type, batch_size=20, shuffle=True):
     """Returns a torch.utils.data.DataLoader object for iterating over the generated
@@ -34,7 +29,7 @@ def get_generated_dataloader(train_or_eval, data_type, batch_size=20, shuffle=Tr
     the GENERATED_DATA_FOLDERS dict. The images will be loaded as tensors.
 
     Parameters:
-    
+
     TRAIN_OR_EVAL (string): one of the key values of GENERATED_DATA_PATH
 
     DATA_TYPE (string): one of the key values of GENERATED_DATA_FOLDERS. Used to
@@ -47,9 +42,11 @@ def get_generated_dataloader(train_or_eval, data_type, batch_size=20, shuffle=Tr
 
     try:
         path_folder = GENERATED_DATA_FOLDERS[data_type]
-        
-        image_transform = transforms.Compose([transforms.ToTensor(), transforms.Grayscale(num_output_channels=1)])
-        
+
+        image_transform = transforms.Compose(
+            [transforms.ToTensor(), transforms.Grayscale(num_output_channels=1)]
+        )
+
         """
         dataset contains all 3 folders, clean, dirty, chan-vese
         Images are stored as a list of 3000 tuples, index [0] is tensor version of image,
@@ -64,8 +61,11 @@ def get_generated_dataloader(train_or_eval, data_type, batch_size=20, shuffle=Tr
         )
 
         return torch.utils.data.DataLoader(
-            good_dataset, batch_size=batch_size, shuffle=shuffle, pin_memory = True,
-        drop_last = True
+            good_dataset,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            pin_memory=True,
+            drop_last=True,
         )
 
     except KeyError:
@@ -74,4 +74,3 @@ def get_generated_dataloader(train_or_eval, data_type, batch_size=20, shuffle=Tr
                 list(GENERATED_DATA_FOLDERS.keys())
             )
         )
-
