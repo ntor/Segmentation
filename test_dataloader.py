@@ -15,7 +15,7 @@ image_transform = transforms.Compose(
 dirty_image_dataloader = DataLoader(dirty_image_dataset, batch_size=1)
 dirty_image_iter = iter(dirty_image_dataloader)
 
-dirty_seg_dataset = dat.SegmentationDataset("./data/train/")
+dirty_seg_dataset = dat.SegmentationDataset("./data/train/", seg_type="clean")
 dirty_seg_dataloader = DataLoader(dirty_seg_dataset)
 dirty_seg_iter = iter(dirty_seg_dataloader)
 
