@@ -10,6 +10,7 @@ from skimage.util import random_noise
 from PIL import Image, ImageDraw
 from scipy.ndimage import gaussian_filter
 
+
 class ShapeGenerator:
     "A wrapper class to generate random geometric shapes "
 
@@ -19,8 +20,8 @@ class ShapeGenerator:
         self.image = Image.new("L", (width, height), 255)
         self._canvas = ImageDraw.Draw(self.image)
 
-    def add_polygon(self, size=0, times=1,colour=0):
-        r = int(random.random()*(255-colour)/10)
+    def add_polygon(self, size=0, times=1, colour=0):
+        r = int(random.random() * (255 - colour) / 10)
         if size == 0:
             # If the user does not provide an explicit size for the polygon,
             # then take an eigth of the minimal dimensions of the image (as an
@@ -38,10 +39,10 @@ class ShapeGenerator:
                 spikeyness=0.2,
                 numVerts=10,
             )
-            self._canvas.polygon(verts, outline=colour+r, fill=colour+r)
+            self._canvas.polygon(verts, outline=colour + r, fill=colour + r)
 
     def add_ellipse(self, size=0, times=1):
-        r = int(25*random.random())
+        r = int(25 * random.random())
         if size == 0:
             # If the user does not provide an explicit size for the polygon,
             # then take an eigth of the minimal dimensions of the image (as an
@@ -58,16 +59,16 @@ class ShapeGenerator:
             uppery = y_center + np.random.exponential(size)
             # Imagedarw then draws the ellipse
             shape = [(lowerx, lowery), (upperx, uppery)]
-            self._canvas.ellipse(shape, outline=0+r, fill=0+r)
-    
-    def add_holes(self,numholes):
-            self.add_polygon(size=1, times=numholes,colour=255)
-    
-    def add_noise(self,sig=2):
+            self._canvas.ellipse(shape, outline=0 + r, fill=0 + r)
+
+    def add_holes(self, numholes):
+        self.add_polygon(size=1, times=numholes, colour=255)
+
+    def add_noise(self, sig=2):
         im_arr = np.asarray(self.image)
-        #adding a gaussian filter will blur the image
-        #chunk_img = chunks(im_arr,n,m,lilrad=5,numchunk=50,colour=(255,255,255))
-        blur_img  = gaussian_filter(im_arr, sigma=sig)
+        # adding a gaussian filter will blur the image
+        # chunk_img = chunks(im_arr,n,m,lilrad=5,numchunk=50,colour=(255,255,255))
+        blur_img = gaussian_filter(im_arr, sigma=sig)
         # random_noise() method will convert image in [0, 255] to [0, 1.0],
         # inherently it use np.random.normal() to create normal distribution
         # and adds the generated noised back to image
@@ -140,6 +141,3 @@ def generate_polygon_coords(ctrX, ctrY, aveRadius, irregularity, spikeyness, num
         angle = angle + angleSteps[i]
 
     return points
-
-
-

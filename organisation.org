@@ -42,26 +42,34 @@
 
 
 
+* Redesign data structure and dataloaders
+** DataLoader design
+- Implement a 'map-style' Dataset
+
+
+** Folder Structure
++ data
+  - train
+    + image_1
+      - clean.png
+      - dirty.png
+      - clean_seg.pt
+      - dirty_cv_seg.pt
+    + image_2
+      - clean.png
+      - ...
+  - eval
+    + image_1
+      - clean.png
+      - ...
+    + ...
+
+
+
 * Ideas
 - Abstract framework with "Regulariser" classes?
-- Restructure data structure:
-- data
-  + train
-    - image_1
-      + clean.png
-      + dirty.png
-      + clean_seg.npy
-      + dirty_cv_seg.npy
-    - image_2
-      + clean.png
-      + ...
-  + eval
-    - image_1
-      + clean.png
-      + ...
-    - ...
 
-    
+
 * Overview
 1) [X] "ROF" paper (/Nonlinear total variation based noise removal algorithms/):
    This paper in mainly of historical importance, as one of the first methods using a variational approach in image processing, more precisely /denoising/. They introduce the TV-functional as a regulariser and use an $L^2$ data-fitting penalty.

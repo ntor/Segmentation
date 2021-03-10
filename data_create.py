@@ -17,7 +17,7 @@ import numpy as np
 def create(
     times=1,
     size=(128, 128),
-    cleansaave="images/clean/clean_",
+    cleansave="images/clean/clean_",
     dirtysave="images/dirty/dirty_",
     chansave="images/chan-vese/chanvese_",
     datacleansaave="data/clean/clean_",
@@ -32,7 +32,7 @@ def create(
         shapes.add_polygon(times=3)
         shapes.add_ellipse(times=3)
         # save in clean
-        shapes.image.save(fp=cleansaave + e + ".png", format="PNG")
+        shapes.image.save(fp=cleansave + e + ".png", format="PNG")
         np.save(file=datacleansaave + e, arr=np.array(shapes.image) / 255)
         # add noise
         shapes.add_holes(40)
