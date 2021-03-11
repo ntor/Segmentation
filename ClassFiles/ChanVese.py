@@ -9,7 +9,7 @@ from tqdm import tqdm  # implements a progress bar for iterations
 
 
 class ChanVese:
-    def __init__(self, image, segmentation_threshold=0.5, c=None):
+    def __init__(self, image, segmentation_threshold=0.8, c=None):
         self._image_arr = np.array(image, dtype=float) / 255
         self.image_shape = self._image_arr.shape
         self.channels = len(image.getbands())
@@ -22,7 +22,7 @@ class ChanVese:
         else:
             self.c = c
 
-        self.u = np.random.random(self.image_shape)
+        self.u = self._image_arr
         self._u_interm = np.array(self.u)
         self._z = (np.random.random(self.image_shape + (self._dim,)) - 0.5) / self._dim
 
@@ -92,9 +92,55 @@ class ChanVese:
                 if show_energy:
                     print(
                         "Energy: {}".format(
-                            CEN_energy(self.u, self.c[0], self.c[1], lmb, self._image_arr)
+                            CEN_energy(
+                                self.u, self.c[0], self.c[1], lmb, self._image_arr
+                            )
                         )
                     )
+
+    def run_until_stable(
+        self,
+        lmb=0.5,
+        epsilon=0.1,
+        theta=0.2,
+        update_c_interval=1,
+        energy_sample_interval=10,
+        energy_sample_length=5,
+        stability_tolerance=1e-6,
+        print_fluctuation=False,
+        print_total_steps=False
+    ):
+        has_stabilised = False
+        energy_sample_list = []
+        i = 0
+        while not has_stabilised:
+            self.single_step(lmb, epsilon, theta)
+            if (i + 1) % update_c_interval == 0:
+                self.update_c()
+            if (i + 1) % energy_sample_interval == 0:
+                energy_sample_list.append(
+                    CEN_energy(self.u, self.c[0], self.c[1], lmb, self._image_arr)
+                )
+                if len(energy_sample_list) % energy_sample_length == 0:
+                    fluctuations = [
+                        x / y - 1
+                        for x in energy_sample_list
+                        for y in energy_sample_list
+                    ]
+
+                    mean_fluctuation = sum(fluctuations) / len(fluctuations)
+
+                    if print_fluctuation:
+                        print("Fluctuation: {}".format(mean_fluctuation))
+                    if abs(mean_fluctuation) < stability_tolerance:
+                        has_stabilised = True
+                    else:
+                        energy_sample_list = []
+
+            i = i + 1
+
+        if print_total_steps:
+            print("Total steps until stabilisation: {}".format(i))
 
 
 def divergence(f):

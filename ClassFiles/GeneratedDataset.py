@@ -109,9 +109,9 @@ def generate_data(times, root_dir, size=(128, 128), append=True):
             pass
 
         shapes = ShapeGenerator(128, 128)
-        shapes.add_polygon(times=np.random.randint(10, 25))
-        shapes.add_ellipse(times=np.random.randint(10, 25))
-        shapes.add_holes(numholes=np.random.randint(10, 40))
+        shapes.add_polygon(times=np.random.randint(10, 35))
+        shapes.add_ellipse(times=np.random.randint(10, 35))
+        shapes.add_holes(numholes=np.random.randint(5, 20), width=np.random.randint(5, 20))
 
         shapes.image.save(
             fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["clean"]), format="PNG"
