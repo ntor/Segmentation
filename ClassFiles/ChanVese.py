@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm  # implements a progress bar for iterations
+from scipy import signal
 
 # import torch
 # from PIL import Image
@@ -24,7 +25,7 @@ class ChanVese:
 
         self.u = self._image_arr
         self._u_interm = np.array(self.u)
-        self._z = (np.random.random(self.image_shape + (self._dim,)) - 0.5) / self._dim
+        self._z = (np.random.random((self._dim,) + self.image_shape) - 0.5) / self._dim
 
     def single_step(self, lmb=0.5, epsilon=0.1, theta=0.2):
         """Update 'self.u', as well as the helper functions 'self._u_interm' and
@@ -46,12 +47,12 @@ class ChanVese:
         """
 
         self._z = clip_vector_field(
-            self._z + epsilon * np.stack(np.gradient(self._u_interm), axis=-1)
+            self._z + epsilon * gradient(self._u_interm)
         )
         tmp = lmb * (
             (self._image_arr - self.c[0]) ** 2 - (self._image_arr - self.c[1]) ** 2
         )
-        u_update = np.clip(self.u + epsilon * (divergence(self._z) - tmp), 0, 1)
+        u_update = np.clip(self.u + epsilon * (div(self._z) - tmp), 0, 1)
         self._u_interm = (1 + theta) * u_update - theta * self.u
         self.u = u_update
 
@@ -73,10 +74,10 @@ class ChanVese:
     def run(
         self,
         steps,
-        lmb=0.5,
-        epsilon=0.1,
+        lmb=1.0,
+        epsilon=0.05,
         theta=0.2,
-        update_c_interval=20,
+        update_c_interval=5,
         show_iterations=False,
         show_energy=False,
     ):
@@ -107,7 +108,7 @@ class ChanVese:
         energy_sample_length=5,
         stability_tolerance=1e-6,
         print_fluctuation=False,
-        print_total_steps=False
+        print_total_steps=False,
     ):
         has_stabilised = False
         energy_sample_list = []
@@ -157,6 +158,46 @@ def divergence(f):
     return np.ufunc.reduce(
         np.add, [np.gradient(f[..., i], axis=i) for i in range(num_dims)]
     )
+
+
+def new_divergence(f):
+    kernel_0_axis = np.array([[1, 0], [-1, 0]])
+    kernel_1_axis = np.array([[1, -1], [0, 0]])
+    return signal.convolve2d(
+        f[..., 0], kernel_0_axis
+    )[:-1, :-1] + signal.convolve2d(
+        f[..., 1], kernel_1_axis
+    )[:-1, :-1]
+
+
+def div(grad):
+    '''
+    Compute the divergence of a gradient
+    Courtesy : E. Gouillart - https://github.com/emmanuelle/tomo-tv/
+    '''
+    res = np.zeros(grad.shape[1:])
+    for d in range(grad.shape[0]):
+        this_grad = np.rollaxis(grad[d], d)
+        this_res = np.rollaxis(res, d)
+        this_res[:-1] += this_grad[:-1]
+        this_res[1:-1] -= this_grad[:-2]
+        this_res[-1] -= this_grad[-2]
+    return res
+
+
+def gradient(img):
+    '''
+    Compute the gradient of an image as a numpy array
+    Courtesy : E. Gouillart - https://github.com/emmanuelle/tomo-tv/
+    '''
+    shape = [img.ndim, ] + list(img.shape)
+    gradient = np.zeros(shape, dtype=img.dtype)
+    slice_all = [0, slice(None, -1),]
+    for d in range(img.ndim):
+        gradient[slice_all] = np.diff(img, axis=d)
+        slice_all[0] = d + 1
+        slice_all.insert(1, slice(None))
+    return gradient
 
 
 def CEN_energy(u, c1, c2, lambd, image_arr):
@@ -212,8 +253,12 @@ def get_segmentation_mean_colours(u, image_arr, threshold=0.5):
     in [0,1], used the determine the segmentation domain {u > threshold}
     """
     mask = u > threshold
-    c1 = (u * image_arr)[mask].mean()
-    c2 = (u * image_arr)[~mask].mean()
+    try:
+        c1 = (u * image_arr)[mask].mean()
+        c2 = (u * image_arr)[~mask].mean()
+    except RuntimeWarning:
+        c1 = 1
+        c2 = 0
 
     return c1, c2
 
