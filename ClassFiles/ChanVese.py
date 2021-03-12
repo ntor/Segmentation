@@ -70,7 +70,6 @@ class ChanVese:
         plt.contour(np.clip(self.u, self.segmentation_threshold, 1), [0], colors="red")
         plt.show()
 
-    # TODO Implement way to stop according to energy stabilisation.
     def run(
         self,
         steps,
