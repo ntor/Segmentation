@@ -160,16 +160,6 @@ def divergence(f):
     )
 
 
-def new_divergence(f):
-    kernel_0_axis = np.array([[1, 0], [-1, 0]])
-    kernel_1_axis = np.array([[1, -1], [0, 0]])
-    return signal.convolve2d(
-        f[..., 0], kernel_0_axis
-    )[:-1, :-1] + signal.convolve2d(
-        f[..., 1], kernel_1_axis
-    )[:-1, :-1]
-
-
 def div(grad):
     '''
     Compute the divergence of a gradient
@@ -252,13 +242,13 @@ def get_segmentation_mean_colours(u, image_arr, threshold=0.5):
     'threshold' (float):
     in [0,1], used the determine the segmentation domain {u > threshold}
     """
-    mask = u > threshold
-    try:
-        c1 = (u * image_arr)[mask].mean()
-        c2 = (u * image_arr)[~mask].mean()
-    except RuntimeWarning:
+    mask = u <= threshold
+    if mask.all():
         c1 = 0
         c2 = 1
+    else:
+        c1 = (u * image_arr)[~mask].mean()
+        c2 = (u * image_arr)[mask].mean()
 
     return c1, c2
 
