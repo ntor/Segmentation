@@ -257,8 +257,8 @@ def get_segmentation_mean_colours(u, image_arr, threshold=0.5):
         c1 = (u * image_arr)[mask].mean()
         c2 = (u * image_arr)[~mask].mean()
     except RuntimeWarning:
-        c1 = 1
-        c2 = 0
+        c1 = 0
+        c2 = 1
 
     return c1, c2
 
