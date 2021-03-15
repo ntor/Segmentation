@@ -8,8 +8,9 @@ from torch.utils.data import Dataset
 from PIL import Image
 from ClassFiles.ShapeGenerator import ShapeGenerator
 from ClassFiles.ChanVese import ChanVese
-import ClassFiles.EvaluationMetrics as EM
 from tqdm import tqdm
+import EvaluationMetrics as EM
+import copy
 
 # This file implements two torch Dataset classes, 'ImageDataset' and
 # 'SegmentationDataset', and a function 'generate_data'. The datasets are
@@ -37,11 +38,7 @@ from tqdm import tqdm
 
 SAMPLE_FOLDER_PREFIX = "image_"
 
-IMAGE_TYPE_NAMES = {
-    "dirty": "dirty.png",
-    "clean": "clean.png",
-    "chan-vese": "dirty_cv_seg.png",
-}
+IMAGE_TYPE_NAMES = {"dirty": "dirty.png", "clean": "clean.png","chan-vese": "dirty_cv_seg.png"}
 
 SEGMENTATION_TYPE_NAMES = {
     "clean": "clean_seg.npy",
@@ -116,9 +113,7 @@ def generate_data(times, root_dir, size=(128, 128), append=True):
         shapes = ShapeGenerator(128, 128)
         shapes.add_polygon(times=np.random.randint(10, 35))
         shapes.add_ellipse(times=np.random.randint(10, 35))
-        shapes.add_holes(
-            numholes=np.random.randint(5, 20), width=np.random.randint(5, 20)
-        )
+        shapes.add_holes(numholes=np.random.randint(5, 20), width=np.random.randint(5, 20))
 
         shapes.image.save(
             fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["clean"]), format="PNG"
@@ -140,7 +135,7 @@ def generate_data(times, root_dir, size=(128, 128), append=True):
             arr=shapes.u,
         )
 
-
+        
 def generate_data_lunglike(times, root_dir, size=(128, 128), append=True):
     if append:
         start_index = sum(
@@ -157,49 +152,51 @@ def generate_data_lunglike(times, root_dir, size=(128, 128), append=True):
             os.mkdir(sample_folder)
         except FileExistsError:
             pass
-
-        # if the cv is good enough then it will save if not it goes again
-        evaluation = 0
-        while evaluation < 0.8:
-
+        
+        
+        
+        "if the cv is good enough then it will save if not it goes again"
+        evaluation =0
+        while evaluation<0.8:
+        
             shapes = ShapeGenerator(128, 128)
-            shapes.add_ellipse(times=np.random.randint(1, 3), size=0.2 * 128)
-
+            shapes.add_ellipse(times=np.random.randint(1, 3),size = 0.2*128 )
+            
+            cleanimage = copy.deepcopy(shapes.image)
             dirtyshapes = shapes
-            dirtyshapes.add_holes(
-                numholes=np.random.randint(40, 50),
-                width=np.random.randint(3, 4),
-            )
-            dirtyshapes.add_blur(sig=1.5)
+            dirtyshapes.add_holes(numholes=np.random.randint(40,50), width=np.random.randint(3, 4),)
+            dirtyshapes.add_blur(sig =1.5)
 
             cvshapes = ChanVese(dirtyshapes.image)
             cvshapes.run(steps=500, show_iterations=False)
 
-            # they are meant to be reshaped inside Jaccard but python is ignoring that for
-            # some reason so I'm doing it here :))))
-            u1 = np.reshape(cvshapes.u, np.size(cvshapes.u))
-            u2 = np.reshape(np.array(shapes.image), np.size(np.array(shapes.image)))
-            evaluation = EM.Jaccard(u1, u2)
-
-        # save all the images
-        shapes.image.save(
-            fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["clean"]), format="PNG"
-        )
+            
+            "they are meant to be reshaped inside Jaccard but python is ignoring that for some reason so Im doing it here :))))"  
+            u1 = np.reshape(cvshapes.u,np.size(cvshapes.u))
+            u2 = np.reshape(np.array(shapes.image),np.size(np.array(shapes.image)))
+            evaluation = EM.Jaccard(u1,u2)
+            
+        "save all the images"
+        cleanimage.save(
+                fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["clean"]), format="PNG"
+            )
         np.save(
-            file=os.path.join(sample_folder, SEGMENTATION_TYPE_NAMES["clean"]),
-            arr=np.array(shapes.image) / 255,
-        )
+                file=os.path.join(sample_folder, SEGMENTATION_TYPE_NAMES["clean"]),
+                arr=np.array(cleanimage) / 255,
+            )
 
         dirtyshapes.image.save(
-            fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["dirty"]), format="PNG"
-        )
+                fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["dirty"]), format="PNG"
+            )
 
         np.save(
-            file=os.path.join(sample_folder, SEGMENTATION_TYPE_NAMES["chan-vese"]),
-            arr=cvshapes.u,
-        )
+                file=os.path.join(sample_folder, SEGMENTATION_TYPE_NAMES["chan-vese"]),
+                arr=cvshapes.u,
+            )
 
         cvim = Image.fromarray(255 * cvshapes.u).convert("L")
-        cvim.save(
-            fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["chan-vese"]), format="PNG"
-        )
+        cvim.save(fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["chan-vese"]), format="PNG")
+
+
+
+
