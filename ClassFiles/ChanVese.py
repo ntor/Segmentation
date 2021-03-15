@@ -60,11 +60,13 @@ class ChanVese:
         """Update the average colours in the segmentation domain and its complement. See
         'get_segmentation_mean_colours' for more information.
         """
-        self.c = get_segmentation_mean_colours(
-            self.u, self._image_arr, self.segmentation_threshold
-        )
+        try:
+            self.c = get_segmentation_mean_colours(
+                self.u, self._image_arr, self.segmentation_threshold
+            )
+        except RuntimeError:
+            self.c = tuple(np.random.rand(2))
 
-    # TODO Modify to also work with coloured images.
     def show_segmentation(self):
         """Plots and shows the image with its segmentation contour superimposed."""
         plt.imshow(self._image_arr, cmap="gray", vmin=0, vmax=1)
@@ -242,13 +244,15 @@ def get_segmentation_mean_colours(u, image_arr, threshold=0.5):
     'threshold' (float):
     in [0,1], used the determine the segmentation domain {u > threshold}
     """
-    mask = u <= threshold
-    if mask.all():
-        c1 = 0
-        c2 = 1
+    mask = u > threshold
+    above = (u * image_arr)[mask]
+    below = (u * image_arr)[~mask]
+
+    if above.size == 0 or below.size == 0:
+        raise RuntimeError("Empty segmentation domain. Cannot calculate mean.")
     else:
-        c1 = (u * image_arr)[~mask].mean()
-        c2 = (u * image_arr)[mask].mean()
+        c1 = above.mean()
+        c2 = below.mean()
 
     return c1, c2
 
