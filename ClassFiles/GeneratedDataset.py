@@ -9,7 +9,7 @@ from PIL import Image
 from ClassFiles.ShapeGenerator import ShapeGenerator
 from ClassFiles.ChanVese import ChanVese
 from tqdm import tqdm
-import EvaluationMetrics as EM
+import ClassFiles.EvaluationMetrics as EM
 import copy
 
 # This file implements two torch Dataset classes, 'ImageDataset' and
