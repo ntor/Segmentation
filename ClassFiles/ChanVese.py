@@ -145,21 +145,24 @@ class ChanVese:
             print("Total steps until stabilisation: {}".format(i))
 
 
-def divergence(f):
-    """Computes the divergence of the vector field f.
+# Obsolete divergence function. Dropped in favor of the simpler
+# finite-difference version "div"
 
-    Parameters:
+# def divergence(f):
+#     """Computes the divergence of the vector field f.
 
-    'f' (ndarray): array of shape (L1,...,Ld,d) representing a discretised
-    vector field on a d-dimensional lattice
+#     Parameters:
 
-    Returns: ndarray of shape (L1,...,Ld)
-    """
+#     'f' (ndarray): array of shape (L1,...,Ld,d) representing a discretised
+#     vector field on a d-dimensional lattice
 
-    num_dims = len(f.shape) - 1
-    return np.ufunc.reduce(
-        np.add, [np.gradient(f[..., i], axis=i) for i in range(num_dims)]
-    )
+#     Returns: ndarray of shape (L1,...,Ld)
+#     """
+
+#     num_dims = len(f.shape) - 1
+#     return np.ufunc.reduce(
+#         np.add, [np.gradient(f[..., i], axis=i) for i in range(num_dims)]
+#     )
 
 
 def div(grad):

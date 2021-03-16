@@ -30,8 +30,8 @@
 
 * TODO Jobs
 - [X] Put the algorithm2 stuff into a framework in line with ChanVese.py
+- [X] Optional reconstruction via clipping w/o penalty
 - [ ] Optimising backpropagation in reconstruction via retain_graph, etc.?
-- [ ] Optional reconstruction via clipping w/o penalty
 - [ ] Animation of segmentation contour during regularisation
 - [ ] Rewrite ChanVese in pytorch
 - Organisation (optional)
@@ -39,30 +39,6 @@
   + [ ] Rename files according to conventions
   + [ ] Git LFS handling for datasets
   + [ ] Access to computation resources
-
-
-
-* Redesign data structure and dataloaders
-** DataLoader design
-- Implement a 'map-style' Dataset
-
-
-** Folder Structure
-+ data
-  - train
-    + image_1
-      - clean.png
-      - dirty.png
-      - clean_seg.pt
-      - dirty_cv_seg.pt
-    + image_2
-      - clean.png
-      - ...
-  - eval
-    + image_1
-      - clean.png
-      - ...
-    + ...
 
 
 
