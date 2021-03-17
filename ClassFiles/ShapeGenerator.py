@@ -50,8 +50,8 @@ class ShapeGenerator:
             size = min(self.width, self.height) / 8
 
         for i in range(times):
-            x_center = random.uniform(self.width / 4, 3 * self.width / 4)
-            y_center = random.uniform(self.height / 4, 3 * self.height / 4)
+            x_center = random.uniform(self.width / 3, 3 * self.width / 4)
+            y_center = random.uniform(self.height / 3, 3 * self.height / 4)
 
             lowerx = x_center - np.random.exponential(size) / 2 - size / 2
             lowery = y_center - np.random.exponential(size) / 2 - size / 2
@@ -61,10 +61,90 @@ class ShapeGenerator:
             shape = [(lowerx, lowery), (upperx, uppery)]
             self._canvas.ellipse(shape, outline=0 + r, fill=0 + r)
 
+    def add_smallcorner_ellipse(self, size=0, times=1):
+        r = int(25 * random.random())
+        if size == 0:
+            # If the user does not provide an explicit size for the polygon,
+            # then take an eigth of the minimal dimensions of the image (as an
+            # arbitrary scale).
+            size = min(self.width, self.height) / 8
+
+        for i in range(times):
+            x_center = np.random.normal(self.width  /4, self.width  / 100)
+            y_center = np.random.normal(self.height /4, self.height / 100)
+
+            lowerx = x_center + np.random.normal(-size , self.width  / 20) 
+            lowery = y_center + np.random.normal(-size , self.height / 20)
+            upperx = np.clip(x_center + np.random.normal( size , self.width  / 20),
+                             a_min=None,a_max=self.width  /2
+                            )
+            uppery = np.clip(y_center + np.random.normal( size , self.height / 20),
+                             a_min=None,a_max=self.width  /2
+                            )
+            # Imagedarw then draws the ellipse
+            shape = [(lowerx, lowery), (upperx, uppery)]
+            draw  = ImageDraw.Draw(self.image)
+            draw.ellipse(shape, outline=0 + r, fill=0 + r)
+            return [x_center, y_center]
+        
+    def add_side_ellipse(self, size=0, times=1):
+        r = int(25 * random.random())
+        if size == 0:
+            # If the user does not provide an explicit size for the polygon,
+            # then take an eigth of the minimal dimensions of the image (as an
+            # arbitrary scale).
+            size = min(self.width, self.height) / 8
+
+        for i in range(times):
+            x_center = np.random.normal(self.width  /4, self.width  / 100)
+            y_center = np.random.normal(self.height /2, self.height / 50)
+
+            lowerx = x_center + np.random.normal(-size , self.width  / 20) 
+            lowery = y_center + np.random.normal(-2*size , self.height / 10)
+            upperx = np.clip(x_center + np.random.normal( size , self.width  / 20),
+                             a_min=None,a_max=self.width  /2
+                            )
+            uppery = y_center + np.random.normal( 2*size , self.height / 10)
+            # Imagedarw then draws the ellipse
+            shape = [(lowerx, lowery), (upperx, uppery)]
+            self._canvas.ellipse(shape, outline=0 + r, fill=0 + r)
+            return [x_center, y_center]
+        
+    def rotation(self,angle=0):
+        im = self.image.rotate(angle)
+        self.image = im
+            
     def add_holes(self, numholes=40, width=2):
         for i in range(numholes):
             tint = np.random.randint(150, 255)
             self.add_polygon(size=width, times=1, colour=tint)
+            
+    def add_polygon2(self, size=0, times=1, colour=0):
+        r = int(random.random() * (255 - colour) / 10)
+        if size == 0:
+            # If the user does not provide an explicit size for the polygon,
+            # then take an eigth of the minimal dimensions of the image (as an
+            # arbitrary scale).
+            size = min(self.width, self.height) / 8
+
+        for i in range(times):
+            x_center = random.uniform(0, self.width)
+            y_center = random.uniform(0, self.height)
+            verts = generate_polygon_coords(
+                x_center,
+                y_center,
+                aveRadius=size,
+                irregularity=0.35,
+                spikeyness=0.2,
+                numVerts=10,
+            )
+            draw  = ImageDraw.Draw(self.image)
+            draw.polygon(verts, outline=colour + r, fill=colour + r)
+            
+    def add_holes2(self, numholes=40, width=2):
+        for i in range(numholes):
+            tint = np.random.randint(150, 255)
+            self.add_polygon2(size=width, times=1, colour=tint)
 
     def add_noise(self, sig=2):
         im_arr = np.asarray(self.image)
