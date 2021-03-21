@@ -89,7 +89,7 @@ noisy_batch contains the corresponding noisy images to chanvese_batch (for the p
 
 
 def reconstruct(
-    chanvese_batch, noisy_batch, NN, lambda_reg, epsilon, reconstruction_steps=1, c1 = None, c2 = None
+    chanvese_batch, noisy_batch, NN, epsilon, reconstruction_steps=1, lambda_reg = None, lambda_data = 1, c1 = None, c2 = None
 ):
     """
     chanvese_batch & noisy_batch must be a torch.tensor of size [batchsize, channels, height, width]
@@ -103,6 +103,9 @@ def reconstruct(
     noisy_batch_copy = noisy_batch.to(
         device
     )  # transfer noisy_batch to same device NN is stored on
+    
+    assert chanvese_batch.size() == noisy_batch.size()
+    batchsize = chanvese_batch.size(0)
 
     for i in range(reconstruction_steps):
         reconstructed_batch.requires_grad = True  # set requires_grad to True, gradients are initialised at zero, and entire backprop graph will be recreated (not the most efficient way, as autograd graph has to be recreated each time)
@@ -116,8 +119,18 @@ def reconstruct(
         since we feed the NN 0.5 for black, -0.5 for white, we subtract that here
         """
         regularising = NN(reconstructed_batch - 0.5)  # [batchsize]
-
-        error = datafitting + lambda_reg * regularising  # [batchsize]
+        
+        if lambda_reg == None:
+            if batchsize <= 20:
+                print('batchsize too small for effective layer_norm, must give lambda_reg')
+                return
+            
+            """
+            have effectively handwritten a (detached) batchnorm - learnt batchnorm would be more sensible but hey ho cba
+            """
+            error = lambda_data * datafitting + regularising / (regularising.detach().var(0, unbiased = True, keepdim = True) + 0.001).sqrt()
+        else:
+            error = lambda_data * datafitting + lambda_reg * regularising  # [batchsize]
         error = error.sum()  # [1], trick to compute all gradients in one go
 
         gradients = torch.autograd.grad(error, reconstructed_batch)[0]
@@ -128,11 +141,16 @@ def reconstruct(
         reconstructed_batch = (
             reconstructed_batch - epsilon * gradients
         ).detach()  # detaching from previous autograd which also sets requires_grad to False
+        
+        print(datafitting.mean().item(), (datafitting.var() + 0.001).sqrt().item(), regularising.mean().item(), (regularising.var() + 0.001).sqrt().item())
 
     return (
         reconstructed_batch.to(chanvese_batch.device),
         noisy_batch,
     )  # send back to original device
+
+
+
 
 
 """
