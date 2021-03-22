@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
 
-import os
-import ClassFiles.GeneratedDataset as dat
 import torch
-from torchvision import transforms
 from torch.utils.data import DataLoader
+import ClassFiles.GeneratedDataset as dat
 import matplotlib.pyplot as plt
 import numpy as np
 
 dirty_image_dataset = dat.ImageDataset("./data/")
-image_transform = transforms.Compose(
-    [transforms.ToTensor(), transforms.Grayscale(num_output_channels=1)]
-)
 dirty_image_dataloader = DataLoader(dirty_image_dataset, batch_size=1)
 dirty_image_iter = iter(dirty_image_dataloader)
 
