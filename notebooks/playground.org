@@ -24,12 +24,6 @@ print("Is 'b' a leaf? {}".format(b.is_leaf))
 print("Its grad_fn is: {}".format(b.grad_fn))
 #+end_src
 
-#+RESULTS:
-: Is 'a' a leaf? True
-: Its grad_fn is: None
-: Is 'b' a leaf? False
-: Its grad_fn is: <PowBackward0 object at 0x7fd221249ac0>
-
 
 We can do backward propagation and obtain the gradients of the loss (in this case ~b~) w.r.t. the leaves (that is, ~a~).
 
@@ -37,9 +31,6 @@ We can do backward propagation and obtain the gradients of the loss (in this cas
 b.backward()
 print("Gradient d(a**2)/da at a=1: {}".format(a.grad))
 #+end_src
-
-#+RESULTS:
-: Gradient d(a**2)/da at a=1: tensor([2.])
 
 
 Alternatively, ~autograd~ allows you to compute gradients between tensors directly via ~torch.autograd.grad~:
@@ -52,8 +43,6 @@ y = (2 * x)
 print(torch.autograd.grad(y.sum(),x))
 #+end_src
 
-#+RESULTS:
-: (tensor([2., 2.]),)
 
 * PyTorch Tutorial
 

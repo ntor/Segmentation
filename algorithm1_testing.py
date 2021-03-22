@@ -51,7 +51,7 @@ def train(
     """
 
     NN.to(device)
-    # not sure why Sebastian doesn't use Adam, but hey
+
     optimiser = optim.Adam(NN.parameters())
     
     
