@@ -46,9 +46,12 @@ class DeepSegmentation:
         """Update the average colours in the segmentation domain and its complement. See
         'get_segmentation_mean_colours' for more information.
         """
-        self.c = cv.get_segmentation_mean_colours(
-            self.u, self._image_arr, self.segmentation_threshold
-        )
+        try:
+            self.c = cv.get_segmentation_mean_colours(
+                self.u, self._image_arr, self.segmentation_threshold
+            )
+        except RuntimeError:
+            self.c = tuple(np.random.rand(2))
 
     def single_step(self, lmb_reg=1, epsilon=0.1):
         """Performs a single gradient descent step for 'self.u' along the CEN
@@ -66,7 +69,9 @@ class DeepSegmentation:
         data_fitting = cv.CEN_data_fitting_energy(
             self.u, self.c[0], self.c[1], self._image_arr
         )
-        error = data_fitting + lmb_reg * self.regulariser(self.u.unsqueeze(0).unsqueeze(0))
+        reg = self.regulariser(self.u.unsqueeze(0).unsqueeze(0) - 0.5)
+        error = data_fitting + lmb_reg * reg
+
         gradients = torch.autograd.grad(error, self.u)[0]
         self.u = (self.u - epsilon * gradients).detach()
         self.u = torch.clamp(self.u, min=0.0, max=1.0)
@@ -80,6 +85,6 @@ class DeepSegmentation:
         step_range = range(steps)
         if show_iterations:
             step_range = tqdm(step_range)
-            for i in step_range:
-                self.single_step(lmb_reg, epsilon)
-                self.update_c()
+        for i in step_range:
+            self.single_step(lmb_reg, epsilon)
+            self.update_c()
