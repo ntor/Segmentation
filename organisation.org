@@ -15,16 +15,16 @@
 - [X] Implement Chan-Vese
   - [X] Notebook proof-of-principle [Peter]
   - [X] Implement class wrapper [Peter]
-- [-] Port Sebastian's code to pytorch
+- [X] Port Sebastian's code to pytorch
   + [X] Classifier training routine (Algorithm 1) [Lucas]
   + [X] Classifier network [Lucas]
   + [X] Reconstruction routine (Algorithm 2) [Lucas]
-- [ ] Logging, quality, etc.
-  + [ ] Implement a logging interface
-  + [ ] Extend ~tqdm~ to obtain a "progess interface" for quality measures, energy, etc.
-  + [ ] Implement "quality" quantities (Jaccard/IOU, DICE, Haussdorf)
+- [-] Logging, quality, etc.
+  + [ ] Implement an animation for ChanVese and DeepSegmentation
+  + [X] Implement "quality" quantities (Jaccard/IOU, DICE, Haussdorf)
 - [ ] Estimation of regularisation parameter
-- [ ] Compare different classifier architectures
+- [ ] Selective Segmentation
+- [X] Implement different classifier architectures
 
 
 
@@ -33,12 +33,10 @@
 - [X] Optional reconstruction via clipping w/o penalty
 - [ ] Optimising backpropagation in reconstruction via retain_graph, etc.?
 - [ ] Animation of segmentation contour during regularisation
-- [ ] Rewrite ChanVese in pytorch
 - Organisation (optional)
   + [X] Move test files and notebooks to an independent directory, but change exec. path
-  + [ ] Rename files according to conventions
-  + [ ] Git LFS handling for datasets
-  + [ ] Access to computation resources
+  + [X] Access to computation resources
+  + [X] Rename files according to conventions
 
 
 
