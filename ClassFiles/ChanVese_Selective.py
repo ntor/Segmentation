@@ -4,13 +4,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm  # implements a progress bar for iterations
 from scipy import signal
+import ClassFiles.GeodesicDistance as gdist
+import scipy
 
 # import torch
 # from PIL import Image
 
 
-class ChanVese:
-    def __init__(self, image, segmentation_threshold=0.8, u_init=None, c=None):
+class ChanVeseSelect:
+    def __init__(self, image, tag, segmentation_threshold=0.8, c=None, beta_G = 10000, epsilon_v =0.0001):     #DONE__add tag position and weight 'theta' for geodesic term 
         self._image_arr = np.array(image, dtype=float) / 255
         self.image_shape = self._image_arr.shape
         self.channels = len(image.getbands())
@@ -23,15 +25,17 @@ class ChanVese:
         else:
             self.c = c
 
-        if u_init is not None:
-            self.u = u_init
-        else:
-            self.u = self._image_arr
-
+        self.u = self._image_arr
         self._u_interm = np.array(self.u)
         self._z = (np.random.random((self._dim,) + self.image_shape) - 0.5) / self._dim
-
-    def single_step(self, lmb=0.5, epsilon=0.1, theta=0.2):
+        # constants used in AOS algorithm
+        #self.g  = 1/(1+beta_G*np.sum(np.square(np.gradient(self._image_arr))))
+        #self.b  = 4*epsilon_v/((1+epsilon_v)**(3/2))
+        #self.ze = (1 - np.sqrt(1-epsilon_v))/2
+        #normalised geodesic distance (tag has to be transposed for geo image-> matrix coordinates)
+        self.geo = gdist.geodesic_distance(self._image_arr,[np.array([tag[1],tag[0]])])/np.amax(gdist.geodesic_distance(self._image_arr,[np.array([tag[1],tag[0]])]))
+    
+    def single_step(self, lmb=0.5, epsilon=0.1, theta=0.2,gamma =1):
         """Update 'self.u', as well as the helper functions 'self._u_interm' and
         'self._z', according to a 'primal-dual' algorithm (Chambolla-Pock, 2011)
         for minimisation of the Chan-Esedoglu-Nikolova functional.
@@ -49,16 +53,113 @@ class ChanVese:
         'theta':
 
         """
+
         self._z = clip_vector_field(
             self._z + epsilon * gradient(self._u_interm)
         )
         tmp = lmb * (
             (self._image_arr - self.c[0]) ** 2 - (self._image_arr - self.c[1]) ** 2
-        )
+        )-gamma*self.geo
         u_update = np.clip(self.u + epsilon * (div(self._z) - tmp), 0, 1)
         self._u_interm = (1 + theta) * u_update - theta * self.u
         self.u = u_update
 
+
+    """
+    def single_step(self, tau=0.01, mu = 1, lmb=1, theta=1, epsilon2 = 0.0001):
+        Update 'self.u', according to 'Additive Operator Splitting Algorithm'
+        
+        see Michael Roberts · Ke Chen · Klaus L. Irion (2018)
+        
+        https://link.springer.com/content/pdf/10.1007/s10851-018-0857-2.pdf
+        
+        Algorithm 1
+
+        
+        #update c_i is done outside the single step 
+        self.update_c()
+        
+        #Calculate r
+        
+        tmp = lmb * (
+            (self._image_arr - self.c[0]) ** 2 - (self._image_arr - self.c[1]) ** 2
+        )
+        
+        GEO = theta * (self.geo)      
+        
+        r = tmp + GEO
+        
+        #Calculate alpha
+        alpha = np.amax(abs(r))
+        
+        #Calcuate f 
+        
+        f = r + alpha*self.vprime()
+        
+        #Update B
+        
+        I = np.eye(self.image_shape[0],self.image_shape[1])
+        
+        b = self.b*(np.where(1+self.ze> self.u, 1, 0)*np.where(self.u >1-self.ze , 1, 0))+ (np.where(self.u<self.ze, 1, 0)*np.where(-self.ze<self.u, 1, 0))
+
+        # Update A1 and A2
+        # As A acts on each column/row of u differently to write it as a matrix for each column/row
+        # if this is too slow, there is a paper on how to do this more efficiently cited in Mike's paper
+        
+        G  = np.divide(self.g, np.sqrt(np.add(sum(np.square(np.gradient(self.u))),epsilon2)))
+        
+        G_iplus  = (G + scipy.ndimage.shift(G, [1,0]))/2
+        G_jplus  = (G + scipy.ndimage.shift(G, [0,1]))/2
+        G_iminus = (G + scipy.ndimage.shift(G,[-1,0]))/2
+        G_jminus = (G + scipy.ndimage.shift(G,[0,-1]))/2
+        
+        
+        A1       = np.zeros((I.shape[0],I.shape[0],I.shape[1]))
+        IB1      = np.zeros((I.shape[0],I.shape[0],I.shape[1]))
+        A2       = np.zeros((I.shape[1],I.shape[1],I.shape[0]))
+        IB2      = np.zeros((I.shape[1],I.shape[1],I.shape[0]))
+        for j in range(I.shape[1]):
+            
+            IB1[:,:,j] = np.linalg.inv(I+tau*alpha*np.diag(b[:,j]))
+            
+            for i,k in np.ndindex(I.shape):
+                if k == i:
+                     A1[i,k,j] = -(G_iplus+G_iminus)[i,j]
+                if k == i-1:
+                     A1[i,k,j] = (G_iminus)[i,j]
+                if k == i+1:
+                     A1[i,k,j] = (G_iplus)[i,j]
+
+        for i in range(I.shape[0]):
+
+            IB2[:,:,i] = np.linalg.inv(I+tau*alpha*np.diag(b[i,:]))
+           
+            for j,k in np.ndindex(I.shape):
+                if k == j:
+                     A2[k,j,i] = -(G_jplus+G_jminus)[i,j]
+                if k == j-1:
+                     A2[k,j,i] = (G_jminus)[i,j]
+                if k == j+1:
+                     A2[k,j,i] = (G_jplus)[i,j]
+        # Update u
+        u1 = np.zeros(I.shape)
+        u2 = np.zeros(I.shape)          
+                                       
+        for j in range(I.shape[1]):
+            u1[:,j] = triverse((I-2*mu*tau*triverse(IB1[:,:,j],A1[:,:,j])), (self.u[:,j]+ tau*triverse(IB1[:,:,j],f[:,j])) )/2
+            
+        for i in range(I.shape[0]):
+            u2[i,:] = triansverse((I-2*mu*tau*triverse(IB2[:,:,i],A2[:,:,i])), (self.u[i,:]+ tau*triverse(IB2[:,:,i],f[i,:])) ) /2
+ 
+        self.u =  u1+u2
+    
+    def vprime(self,epsilon_v = 0.0001):
+        raw      = (4*self.u-2)/np.sqrt((np.add(np.square(np.add(2*self.u,-1)),epsilon_v)))
+        support1 = np.where(1-self.ze> self.u, 1, 0)
+        support2 = np.where(self.u>self.ze, 1, 0)
+        return raw*support1*support2
+    """
+    
     def update_c(self):
         """Update the average colours in the segmentation domain and its complement. See
         'get_segmentation_mean_colours' for more information.
@@ -82,15 +183,27 @@ class ChanVese:
         lmb=1.0,
         epsilon=0.05,
         theta=0.2,
+        gamma=1,
+        update_c_interval=5,
         show_iterations=False,
+        show_energy=False,
     ):
         step_range = range(steps)
         if show_iterations:
             step_range = tqdm(step_range)
 
         for i in step_range:
-            self.single_step(lmb, epsilon, theta)
-            self.update_c()
+            self.single_step(lmb, epsilon, theta,gamma)
+            if (i + 1) % update_c_interval == 0:
+                self.update_c()
+                if show_energy:
+                    print(
+                        "Energy: {}".format(
+                            CEN_energy(
+                                self.u, self.c[0], self.c[1], lmb, self._image_arr
+                            )
+                        )
+                    )
 
     def run_until_stable(
         self,
@@ -135,6 +248,64 @@ class ChanVese:
 
         if print_total_steps:
             print("Total steps until stabilisation: {}".format(i))
+
+def triverse(A,b):
+        Ab = diagonal_form(A)
+        return scipy.linalg.solve_banded((1,1),Ab,b)
+    
+def triansverse(A,b):
+        AT = np.transpose(A)
+        BT = np.transpose(b)
+        CT = triverse(AT,BT)
+        return np.transpose(CT)
+    
+def diagonal_form(a, upper = 1, lower= 1):
+        """
+        a is a numpy square matrix
+        this function converts a square matrix to diagonal ordered form
+        returned matrix in ab shape which can be used directly for scipy.linalg.solve_banded
+        """
+        n = a.shape[1]
+        assert(np.all(a.shape ==(n,n)))
+
+        ab = np.zeros((2*n-1, n))
+
+        for i in range(n):
+            ab[i,(n-1)-i:] = np.diagonal(a,(n-1)-i)
+
+        for i in range(n-1): 
+            ab[(2*n-2)-i,:i+1] = np.diagonal(a,i-(n-1))
+
+        mid_row_inx = int(ab.shape[0]/2)
+        upper_rows = [mid_row_inx - i for i in range(1, upper+1)]
+        upper_rows.reverse()
+        upper_rows.append(mid_row_inx)
+        lower_rows = [mid_row_inx + i for i in range(1, lower+1)]
+        keep_rows = upper_rows+lower_rows
+        ab = ab[keep_rows,:]
+
+        return ab
+        
+    
+    
+# Obsolete divergence function. Dropped in favor of the simpler
+# finite-difference version "div"
+
+# def divergence(f):
+#     """Computes the divergence of the vector field f.
+
+#     Parameters:
+
+#     'f' (ndarray): array of shape (L1,...,Ld,d) representing a discretised
+#     vector field on a d-dimensional lattice
+
+#     Returns: ndarray of shape (L1,...,Ld)
+#     """
+
+#     num_dims = len(f.shape) - 1
+#     return np.ufunc.reduce(
+#         np.add, [np.gradient(f[..., i], axis=i) for i in range(num_dims)]
+#     )
 
 
 def div(grad):
@@ -201,34 +372,6 @@ def CEN_data_fitting_energy(u, c1, c2, image_arr):
 
     """
     return ((image_arr - c1) ** 2 * u + (image_arr - c2) ** 2 * (1 - u)).sum()
-
-
-def CEN_data_fitting_L2gradient(u, c1, c2, image_arr):
-    """Returns the L2 norm of the gradient of the data-fitting term with respect to u,
-    used for initialising the reconstruction lambda
-    
-    This function is compatibile both with numpy's ndarrays and torch's Tensor classes
-    
-    """
-    return (((image_arr - c1) ** 2 - (image_arr - c2) ** 2) ** 2).sum() ** 0.5
-
-
-def initialise_reconstruction_lambda(u_groundtruth, image_arr, NN_L2gradient=1, lambda_CEN=0.5, threshold=0.5):
-    """Return reconstruction_lambda for which u_groundtruth is a critical point of
-    DeepSegmentation applied to image_arr.
-    
-    If the gradient loss of the NN is g, the NN_L2gradient is 1 + g ** 0.5.
-    
-    lambda_CEN is the lambda used to weight the datafitting term in ChanVese.single_step.
-    
-    threshold is the threshold used to calculate c1, c2 in ChanVese.update_c.
-    
-    To properly initialise lambda, this output must be averaged over a suitably large
-    batch of images/
-    
-    """
-    c1, c2 = get_segmentation_mean_colours(u_groundtruth, image_arr, threshold = threshold)
-    return lambda_CEN * CEN_data_fitting_L2gradient(u_groundtruth, c1, c2, image_arr) / NN_L2gradient
 
 
 def get_segmentation_mean_colours(u, image_arr, threshold=0.5):
