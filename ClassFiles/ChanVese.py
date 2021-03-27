@@ -231,6 +231,34 @@ def CEN_data_fitting_energy(u, c1, c2, image_arr):
     return ((image_arr - c1) ** 2 * u + (image_arr - c2) ** 2 * (1 - u)).sum()
 
 
+def CEN_data_fitting_L2gradient(u, c1, c2, image_arr):
+    """Returns the L2 norm of the gradient of the data-fitting term with respect to u,
+    used for initialising the reconstruction lambda
+    
+    This function is compatibile both with numpy's ndarrays and torch's Tensor classes
+    
+    """
+    return (((image_arr - c1) ** 2 - (image_arr - c2) ** 2) ** 2).sum() ** 0.5
+
+
+def initialise_reconstruction_lambda(u_groundtruth, image_arr, NN_L2gradient=1, lambda_CEN=0.5, threshold=0.5):
+    """Return reconstruction_lambda for which u_groundtruth is a critical point of
+    DeepSegmentation applied to image_arr.
+    
+    If the gradient loss of the NN is g, the NN_L2gradient is 1 + g ** 0.5.
+    
+    lambda_CEN is the lambda used to weight the datafitting term in ChanVese.single_step.
+    
+    threshold is the threshold used to calculate c1, c2 in ChanVese.update_c.
+    
+    To properly initialise lambda, this output must be averaged over a suitably large
+    batch of images/
+    
+    """
+    c1, c2 = get_segmentation_mean_colours(u_groundtruth, image_arr, threshold = threshold)
+    return lambda_CEN * CEN_data_fitting_L2gradient(u_groundtruth, c1, c2, image_arr) / NN_L2gradient
+
+
 def get_segmentation_mean_colours(u, image_arr, threshold=0.5):
     """Returns the "mean colors" of 'image_arr' inside and outside the segmentation
     domain, which is defined by {u > threshold} (cf. equation (11) in

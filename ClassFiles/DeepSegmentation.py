@@ -53,7 +53,7 @@ class DeepSegmentation:
         except RuntimeError:
             self.c = tuple(np.random.rand(2))
 
-    def single_step(self, lmb_reg=1, epsilon=0.1):
+    def single_step(self, lmb_reg=15, epsilon=0.1):
         """Performs a single gradient descent step for 'self.u' along the CEN
         data-fitting term plus the regulariser term. After the gradient step, u
         is clipped in order to lie in [0,1].
@@ -71,6 +71,8 @@ class DeepSegmentation:
         )
         reg = self.regulariser(self.u.unsqueeze(0).unsqueeze(0) - 0.5)
         error = data_fitting + lmb_reg * reg
+        
+        #print(data_fitting, lmb_reg * reg)
 
         gradients = torch.autograd.grad(error, self.u)[0]
         self.u = (self.u - epsilon * gradients).detach()
