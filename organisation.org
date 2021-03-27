@@ -24,6 +24,8 @@
   + [X] Implement "quality" quantities (Jaccard/IOU, DICE, Haussdorf)
 - [ ] Estimation of regularisation parameter
 - [ ] Selective Segmentation
+  - [ ] Get Michael's code running
+  - [ ] Implement a function
 - [X] Implement different classifier architectures
 
 

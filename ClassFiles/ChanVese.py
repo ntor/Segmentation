@@ -10,7 +10,7 @@ from scipy import signal
 
 
 class ChanVese:
-    def __init__(self, image, segmentation_threshold=0.8, c=None):
+    def __init__(self, image, segmentation_threshold=0.8, u_init=None, c=None):
         self._image_arr = np.array(image, dtype=float) / 255
         self.image_shape = self._image_arr.shape
         self.channels = len(image.getbands())
@@ -23,7 +23,11 @@ class ChanVese:
         else:
             self.c = c
 
-        self.u = self._image_arr
+        if u_init is not None:
+            self.u = u_init
+        else:
+            self.u = self._image_arr
+
         self._u_interm = np.array(self.u)
         self._z = (np.random.random((self._dim,) + self.image_shape) - 0.5) / self._dim
 
@@ -45,7 +49,6 @@ class ChanVese:
         'theta':
 
         """
-
         self._z = clip_vector_field(
             self._z + epsilon * gradient(self._u_interm)
         )
@@ -79,9 +82,7 @@ class ChanVese:
         lmb=1.0,
         epsilon=0.05,
         theta=0.2,
-        update_c_interval=5,
         show_iterations=False,
-        show_energy=False,
     ):
         step_range = range(steps)
         if show_iterations:
@@ -89,16 +90,7 @@ class ChanVese:
 
         for i in step_range:
             self.single_step(lmb, epsilon, theta)
-            if (i + 1) % update_c_interval == 0:
-                self.update_c()
-                if show_energy:
-                    print(
-                        "Energy: {}".format(
-                            CEN_energy(
-                                self.u, self.c[0], self.c[1], lmb, self._image_arr
-                            )
-                        )
-                    )
+            self.update_c()
 
     def run_until_stable(
         self,
@@ -143,26 +135,6 @@ class ChanVese:
 
         if print_total_steps:
             print("Total steps until stabilisation: {}".format(i))
-
-
-# Obsolete divergence function. Dropped in favor of the simpler
-# finite-difference version "div"
-
-# def divergence(f):
-#     """Computes the divergence of the vector field f.
-
-#     Parameters:
-
-#     'f' (ndarray): array of shape (L1,...,Ld,d) representing a discretised
-#     vector field on a d-dimensional lattice
-
-#     Returns: ndarray of shape (L1,...,Ld)
-#     """
-
-#     num_dims = len(f.shape) - 1
-#     return np.ufunc.reduce(
-#         np.add, [np.gradient(f[..., i], axis=i) for i in range(num_dims)]
-#     )
 
 
 def div(grad):

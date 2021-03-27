@@ -13,6 +13,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 def draw_figure(canvas, figure):
+    # if canvas.children:
+    #     for child in canvas.winfo_children():
+    #         child.destroy()
     figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
     figure_canvas_agg.draw()
     figure_canvas_agg.get_tk_widget().pack(side="top", fill="both", expand=1)
@@ -20,8 +23,6 @@ def draw_figure(canvas, figure):
 
 
 matplotlib.use("TkAgg")
-fig, axs = plt.subplots(figsize=(3, 3))
-
 
 
 # --- LAYOUT DEFINITION ---
@@ -50,7 +51,9 @@ layout = [
 ]
 
 window = sg.Window("Segmentation Explor-inator 3000", layout)
+fig, axs = plt.subplots(figsize=(3, 3))
 fig_agg = None
+
 
 # Run the Event Loop
 while True:
@@ -81,10 +84,11 @@ while True:
             seg = np.load(seg_name)
             axs.cla()
             axs.imshow(np.array(im), cmap="gray")
-            axs.contour(np.clip(seg, 0.5, 1), [0], colors="red")
-            if fig_agg is not None:
-                fig_agg.get_tk_widget().forget()
-            fig_agg = draw_figure(window["-CANVAS-"].TKCanvas, fig)
+            axs.contour(np.clip(seg, 0.5, 1), colors="red", linewidths=0.25)
+            if fig_agg is None:
+                fig_agg = draw_figure(window["-CANVAS-"].TKCanvas, fig)
+            else:
+                fig_agg.draw()
             window.refresh()
 
         except:
