@@ -194,7 +194,7 @@ ds_lambda = 15
 ds_epsilon = 0.1
 ds_steps = 100
 animation_sleep = 100
-
+steps_left = 0
 
 # --- NETWORK INITIALISATION ---
 NN = net.ConvNet8(1, 128, 128)
@@ -210,43 +210,47 @@ def draw_contour(contour):
 
 def cv_init():
     print("Init.")
-    global seg_function, contour, seg_object
+    global seg_function, contour, seg_object, steps_left
     seg_object = ChanVese(
         image, u_init=seg_function, segmentation_threshold=seg_threshold
     )
     if seg_function is None:
         seg_function = seg_object.u
+    steps_left = cv_steps
     return (contour,)
 
 
 def cv_animate(i):
-    global contour, seg_function
+    global contour, seg_function, steps_left
     print(f"Step {i}")
     seg_object.update_c()
     seg_object.single_step(cv_lambda, cv_epsilon)
     seg_function = seg_object.u
+    steps_left -= 1
     contour = draw_contour(contour)
     return (contour,)
 
 
 def ds_init():
     print("Init.")
-    global seg_function, contour, seg_object
+    global seg_function, contour, seg_object, steps_left
     seg_object = DeepSegmentation(
         image, NN, u_init=seg_function, segmentation_threshold=seg_threshold
     )
     if seg_function is None:
         seg_function = seg_object.u
+    steps_left = ds_steps
     return (contour,)
 
 
 def ds_animate(i):
-    global contour, seg_function
+    global contour, seg_function, steps_left
     print(f"Step {i}")
     seg_object.update_c()
     seg_object.single_step(ds_lambda, ds_epsilon)
     seg_function = seg_object.u
     contour = draw_contour(contour)
+    steps_left -= 1
     return (contour,)
 
 
@@ -299,27 +303,33 @@ while True:
         if digit_check(window, values, "_ANIMATION_SLEEP_"):
             animation_sleep = int(values["_ANIMATION_SLEEP_"])
     elif event == "_CV_RUN_BUTTON_":
-        ani = animation.FuncAnimation(
-            fig,
-            cv_animate,
-            frames=cv_steps,
-            interval=animation_sleep,
-            repeat=False,
-            blit=False,
-            init_func=cv_init,
-        )
-        fig_agg.draw()
+        if steps_left <= 0:
+            ani = animation.FuncAnimation(
+                fig,
+                cv_animate,
+                frames=cv_steps,
+                interval=animation_sleep,
+                repeat=False,
+                blit=False,
+                init_func=cv_init,
+            )
+            fig_agg.draw()
+        else:
+            sg.popup_error(f"Still running, {steps_left} steps left.")
     elif event == "_DS_RUN_BUTTON_":
-        ani = animation.FuncAnimation(
-            fig,
-            ds_animate,
-            frames=ds_steps,
-            interval=animation_sleep,
-            repeat=False,
-            blit=False,
-            init_func=ds_init,
-        )
-        fig_agg.draw()
+        if steps_left <= 0:
+            ani = animation.FuncAnimation(
+                fig,
+                ds_animate,
+                frames=ds_steps,
+                interval=animation_sleep,
+                repeat=False,
+                blit=False,
+                init_func=ds_init,
+            )
+            fig_agg.draw()
+        else:
+            sg.popup_error(f"Still running, {steps_left} steps left.")
 
 
 window.Close()
