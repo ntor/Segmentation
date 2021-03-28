@@ -202,8 +202,9 @@ def generate_data_NN(times, root_dir,NN, NetName, size=(128, 128), append=True):
             u1 = np.reshape(cvshapes.u, np.size(cvshapes.u))
             u2 = np.reshape(clean_seg, np.size(clean_seg))
             evaluation = EM.Jaccard(u1, u2)
+            
         
-        dsim = ds.DeepSegmentation(im,NN,cvshapes.geo,cvshapes.u)     
+        dsim = ds.DeepSegmentation(shapes.image,NN,cvshapes.u)     
         dsim.run(1000,lmb_reg=10, epsilon=0.001, show_iterations=True)
 
         # save all the images
@@ -230,17 +231,17 @@ def generate_data_NN(times, root_dir,NN, NetName, size=(128, 128), append=True):
         )
         
         np.save(
-            file=os.path.join(sample_folder,NetName"_seg"+".npy"),
+            file=os.path.join(sample_folder,NetName+"_seg"+".npy"),
             arr = np.array(dsim.u),
         )
-        im = Image.fromarray(255 * dsim.u).convert("L")
+        im = Image.fromarray(255 * np.array(dsim.u)).convert("L")
         im.save(
                    fp=os.path.join(sample_folder,NetName+".png"), format="PNG"
         )
 
         #save the Metrics
         cv  = np.reshape(cvshapes.u, np.size(cvshapes.u))        
-        ds  = np.reshape(np.array(dsim.u), np.size(clean_seg))
+        dseg  = np.reshape(np.array(dsim.u), np.size(clean_seg))
         cln = np.reshape(clean_seg, np.size(clean_seg))
         np.save(
             file=os.path.join(sample_folder, "Jaccard_"+"cv"+".npy"),
@@ -248,15 +249,15 @@ def generate_data_NN(times, root_dir,NN, NetName, size=(128, 128), append=True):
         )
         np.save(
             file=os.path.join(sample_folder, "Jaccard_"+NetName+".npy"),
-            arr = EM.Jaccard(ds, cln),
+            arr = EM.Jaccard(dseg, cln),
         )  
         np.save(
-            file=os.path.join(sample_folder, "Sorensen_"+"cv+".npy"),
+            file=os.path.join(sample_folder, "Sorensen_"+"cv"+".npy"),
             arr = EM.Sorensen(cv, cln),
         )
         np.save(
             file=os.path.join(sample_folder, "Sorensen_"+NetName+".npy"),
-            arr = np.Sorensen(ds,cln),
+            arr = EM.Sorensen(dseg,cln),
         )          
 
         
@@ -344,7 +345,7 @@ def generate_data_NN_tagged(times, root_dir,NN, NetName, size=(128, 128),  appen
             u2 = np.reshape(clean_seg, np.size(clean_seg))
             evaluation = EM.Jaccard(u1, u2)
             
-        dsim = dst.DeepSegmentation(im,NN,cvshapes.geo,cvshapes.u)     
+        dsim = dst.DeepSegmentation(shapes.image,NN,cvshapes.geo,cvshapes.u)     
         dsim.run(1000,lmb_reg=10, epsilon=0.001, gamma=10, show_iterations=True)
 
         # save all the images
@@ -374,17 +375,17 @@ def generate_data_NN_tagged(times, root_dir,NN, NetName, size=(128, 128),  appen
             arr = np.array(np.rint(centre).astype(int)),
         )
         np.save(
-            file=os.path.join(sample_folder,NetName"_seg"+".npy"),
+            file=os.path.join(sample_folder,NetName+"_seg"+".npy"),
             arr = np.array(dsim.u),
         )
-        im = Image.fromarray(255 * dsim.u).convert("L")
+        im = Image.fromarray(255 *  np.array(dsim.u)).convert("L")
         im.save(
                    fp=os.path.join(sample_folder,NetName+".png"), format="PNG"
         )
         
         #save the Metrics
         cv  = np.reshape(cvshapes.u, np.size(cvshapes.u))        
-        ds  = np.reshape(np.array(dsim.u), np.size(clean_seg))
+        dseg  = np.reshape(np.array(dsim.u), np.size(clean_seg))
         cln = np.reshape(clean_seg, np.size(clean_seg))
         np.save(
             file=os.path.join(sample_folder, "Jaccard_"+"cv"+".npy"),
@@ -392,15 +393,15 @@ def generate_data_NN_tagged(times, root_dir,NN, NetName, size=(128, 128),  appen
         )
         np.save(
             file=os.path.join(sample_folder, "Jaccard_"+NetName+".npy"),
-            arr = EM.Jaccard(ds, cln),
+            arr = EM.Jaccard(dseg, cln),
         )  
         np.save(
-            file=os.path.join(sample_folder, "Sorensen_"+"cv+".npy"),
+            file=os.path.join(sample_folder, "Sorensen_"+"cv"+".npy"),
             arr = EM.Sorensen(cv, cln),
         )
         np.save(
             file=os.path.join(sample_folder, "Sorensen_"+NetName+".npy"),
-            arr = np.Sorensen(ds,cln),
+            arr = EM.Sorensen(dseg,cln),
         )          
 
 def rotate_around_point_highperf(xy, theta, origin=(0, 0)):
