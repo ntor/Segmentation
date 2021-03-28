@@ -72,7 +72,7 @@ class DeepSegmentation:
         reg = self.regulariser(self.u.unsqueeze(0).unsqueeze(0) - 0.5)
         error = data_fitting + lmb_reg * reg
         
-        #print(data_fitting, lmb_reg * reg)
+        print(data_fitting, lmb_reg * reg)
 
         gradients = torch.autograd.grad(error, self.u)[0]
         self.u = (self.u - epsilon * gradients).detach()
