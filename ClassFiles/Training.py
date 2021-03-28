@@ -9,12 +9,13 @@ def train_regulariser(
     NN,
     good_dataloader,
     bad_dataloader,
-    epochs=100,
-    lr=0.0001,
+    epochs=20,
+    lr=0.001,
     mu=1,
-    binary=False,
+    binary=True,
     flip=False,
-    device="cuda:0" if torch.cuda.is_available() else "cpu"
+    device="cuda:0" if torch.cuda.is_available() else "cpu",
+    save_path = None
 ):
     """Train a neural network 'NN' as a Wasserstein discriminator between "good"
     data (provided by 'good_dataloader') and "bad" data (provided by
@@ -33,7 +34,7 @@ def train_regulariser(
     """
 
     NN.to(device)
-    optimiser = optim.Adam(NN.parameters())
+    optimiser = optim.Adam(NN.parameters(), lr = lr)
 
     for j in range(epochs):
         assert len(good_dataloader) == len(bad_dataloader)
@@ -41,8 +42,8 @@ def train_regulariser(
         bad_iter = iter(bad_dataloader)
 
         for i in range(len(good_dataloader)):
-            groundtruth_batch = good_iter.next().unsqueeze(1)
-            chanvese_batch = bad_iter.next().unsqueeze(1)
+            groundtruth_batch = good_iter.next()
+            chanvese_batch = bad_iter.next()
 
             assert groundtruth_batch.size() == chanvese_batch.size()
             batchsize = groundtruth_batch.size(0)
@@ -117,7 +118,7 @@ def train_regulariser(
             # similarly scaled above
             loss = wasserstein_loss + mu * gradient_loss  # [1]
             assert loss.isnan().sum() == 0
-            print("Wasserstein loss: {:.2f}\t\t Gradient Loss: {:.2f}".format(wasserstein_loss.item(), gradient_loss.item()))
+            print("Wasserstein loss: {:.2f}\t Gradient Loss: {:.2f}\t Min Groundtruth: {:.2f}\t Max Chan-Vese: {:.2f}".format(wasserstein_loss.item(), gradient_loss.item(), groundtruth_out.min().item(), chanvese_out.max().item()))
 
             # backprop step
             # no need to zero the gradients of the intermediate point, since it
@@ -133,5 +134,8 @@ def train_regulariser(
         # groundtruth, and the min on chanvese, this gives an indication of its
         # performance as a classifier
         print(f"Epoch {j} done.")
-
+    
+    if save_path != None:
+        torch.save(NN.state_dict(), save_path)
+    
     return NN.to("cpu")

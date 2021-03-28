@@ -113,7 +113,7 @@ layout_deep_segmentation = [
     [
         sg.Text("λ"),
         sg.Slider(
-            range=(-3, 3),
+            range=(-7, 8),
             size=(15, 7),
             default_value=0.0,
             disable_number_display=True,
@@ -121,7 +121,7 @@ layout_deep_segmentation = [
             orientation="h",
             key="_DS_LAMBDA_SLIDER_",
         ),
-        sg.Text("1", size=(10, 1), key="_DS_LAMBDA_OUT_"),
+        sg.Text("14", size=(10, 1), key="_DS_LAMBDA_OUT_"),
     ],
     [
         sg.Text("ε"),
@@ -190,7 +190,7 @@ ani = None
 cv_lambda = 1
 cv_epsilon = 0.1
 cv_steps = 100
-ds_lambda = 1
+ds_lambda = 15
 ds_epsilon = 0.1
 ds_steps = 100
 animation_sleep=100
@@ -198,8 +198,8 @@ animation_sleep=100
 
 
 # --- NETWORK INITIALISATION ---
-NN = net.ConvNet1(1, 128, 128)
-NN.load_state_dict(torch.load("./Neural_Networks_lunglike/ConvNet1_trained"))
+NN = net.ConvNet8(1, 128, 128)
+NN.load_state_dict(torch.load("./Neural_Networks_lunglike/ConvNet8_trained", map_location=torch.device('cpu')))
 
 
 def draw_contour(contour):
@@ -288,7 +288,7 @@ while True:
         if digit_check(window, values, "_CV_STEPS_"):
             ds_steps = values["_CV_STEPS_"]
     elif event == "_DS_LAMBDA_SLIDER_":
-        ds_lambda = 10 ** int(values["_DS_LAMBDA_SLIDER_"])
+        ds_lambda = 14 + 2 * int(values["_DS_LAMBDA_SLIDER_"])
         window.Element("_DS_LAMBDA_OUT_").Update(ds_lambda)
     elif event == "_DS_EPSILON_SLIDER_":
         ds_epsilon = 10 ** int(values["_DS_EPSILON_SLIDER_"])
