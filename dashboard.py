@@ -53,11 +53,11 @@ layout_segmentation_options = [
     [
         sg.Text("Threshold"),
         sg.Slider(
-            range=(0, 1),
+            range=(0.1, 0.9),
             size=(20, 10),
             default_value=0.5,
             resolution=0.1,
-            tick_interval=1.0,
+            tick_interval=0.2,
             orientation="h",
             enable_events=True,
             key="_THRESHOLD_SLIDER_",
@@ -113,20 +113,20 @@ layout_deep_segmentation = [
     [
         sg.Text("λ"),
         sg.Slider(
-            range=(-7, 8),
+            range=(0, 30),
             size=(15, 7),
-            default_value=0.0,
+            default_value=15,
             disable_number_display=True,
             enable_events=True,
             orientation="h",
             key="_DS_LAMBDA_SLIDER_",
         ),
-        sg.Text("14", size=(10, 1), key="_DS_LAMBDA_OUT_"),
+        sg.Text("15", size=(10, 1), key="_DS_LAMBDA_OUT_"),
     ],
     [
         sg.Text("ε"),
         sg.Slider(
-            range=(-4, 0),
+            range=(-4.0, 0),
             size=(15, 7),
             default_value=-1.0,
             disable_number_display=True,
@@ -193,8 +193,7 @@ cv_steps = 100
 ds_lambda = 15
 ds_epsilon = 0.1
 ds_steps = 100
-animation_sleep=100
-
+animation_sleep = 100
 
 
 # --- NETWORK INITIALISATION ---
@@ -286,25 +285,25 @@ while True:
         window.Element("_CV_EPSILON_OUT_").Update(cv_epsilon)
     elif event == "_CV_STEPS_":
         if digit_check(window, values, "_CV_STEPS_"):
-            ds_steps = values["_CV_STEPS_"]
+            cv_steps = int(values["_CV_STEPS_"])
     elif event == "_DS_LAMBDA_SLIDER_":
-        ds_lambda = 14 + 2 * int(values["_DS_LAMBDA_SLIDER_"])
+        ds_lambda = int(values["_DS_LAMBDA_SLIDER_"])
         window.Element("_DS_LAMBDA_OUT_").Update(ds_lambda)
     elif event == "_DS_EPSILON_SLIDER_":
         ds_epsilon = 10 ** int(values["_DS_EPSILON_SLIDER_"])
         window.Element("_DS_EPSILON_OUT_").Update(ds_epsilon)
     elif event == "_DS_STEPS_":
         if digit_check(window, values, "_DS_STEPS_"):
-            ds_steps = values["_DS_STEPS_"]
+            ds_steps = int(values["_DS_STEPS_"])
     elif event == "_ANIMATION_SLEEP_":
         if digit_check(window, values, "_ANIMATION_SLEEP_"):
-            animation_sleep = values["_ANIMATION_SLEEP_"]
+            animation_sleep = int(values["_ANIMATION_SLEEP_"])
     elif event == "_CV_RUN_BUTTON_":
         ani = animation.FuncAnimation(
             fig,
             cv_animate,
             frames=cv_steps,
-            interval=200,
+            interval=animation_sleep,
             repeat=False,
             blit=False,
             init_func=cv_init,
