@@ -104,7 +104,7 @@ layout_chan_vese = [
     ],
     [
         sg.Text("Steps"),
-        sg.In("100", size=(5, 1), enable_events=True, key="_CV_STEPS_"),
+        sg.In("40", size=(5, 1), enable_events=True, key="_CV_STEPS_"),
         sg.Button("Run", key="_CV_RUN_BUTTON_"),
     ],
 ]
@@ -138,7 +138,7 @@ layout_deep_segmentation = [
     ],
     [
         sg.Text("Steps"),
-        sg.In("100", size=(5, 1), enable_events=True, key="_DS_STEPS_"),
+        sg.In("40", size=(5, 1), enable_events=True, key="_DS_STEPS_"),
         sg.Button("Run", key="_DS_RUN_BUTTON_"),
     ],
 ]
@@ -189,10 +189,10 @@ seg_threshold = 0.5
 ani = None
 cv_lambda = 1
 cv_epsilon = 0.1
-cv_steps = 100
+cv_steps = 40
 ds_lambda = 14
 ds_epsilon = 0.1
-ds_steps = 100
+ds_steps = 40
 animation_sleep=100
 
 
@@ -286,7 +286,7 @@ while True:
         window.Element("_CV_EPSILON_OUT_").Update(cv_epsilon)
     elif event == "_CV_STEPS_":
         if digit_check(window, values, "_CV_STEPS_"):
-            ds_steps = values["_CV_STEPS_"]
+            cv_steps = int(values["_CV_STEPS_"])
     elif event == "_DS_LAMBDA_SLIDER_":
         ds_lambda = 14 + 2 * int(values["_DS_LAMBDA_SLIDER_"])
         window.Element("_DS_LAMBDA_OUT_").Update(ds_lambda)
@@ -295,10 +295,10 @@ while True:
         window.Element("_DS_EPSILON_OUT_").Update(ds_epsilon)
     elif event == "_DS_STEPS_":
         if digit_check(window, values, "_DS_STEPS_"):
-            ds_steps = values["_DS_STEPS_"]
+            ds_steps = int(values["_DS_STEPS_"])
     elif event == "_ANIMATION_SLEEP_":
         if digit_check(window, values, "_ANIMATION_SLEEP_"):
-            animation_sleep = values["_ANIMATION_SLEEP_"]
+            animation_sleep = int(values["_ANIMATION_SLEEP_"])
     elif event == "_CV_RUN_BUTTON_":
         ani = animation.FuncAnimation(
             fig,
