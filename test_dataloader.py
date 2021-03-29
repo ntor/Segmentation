@@ -16,12 +16,12 @@ dirty_seg_iter = iter(dirty_seg_dataloader)
 
 i = 0
 for im_tensor_batch, seg in zip(dirty_image_iter, dirty_seg_iter):
-    fig, axs = plt.subplots(1, 2, figsize=(5, 5))
+    fig, axs = plt.subplots(1, 1, figsize=(5, 5))
     u = seg.squeeze(0).numpy()
 
-    axs[0].imshow(im_tensor_batch[0][0], cmap="gray")
-    axs[0].contour(np.clip(u, 0.5, 1), [0], colors="red")
-    axs[1].hist(u.flatten())
+    axs.imshow(im_tensor_batch[0][0], cmap="gray")
+    axs.contour(np.clip(u, 0.5, 1), [0], colors="red")
+    # axs[1].hist(u.flatten())
     plt.show()
     i += 1
     if i >= 10:

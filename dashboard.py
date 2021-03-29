@@ -53,11 +53,11 @@ layout_segmentation_options = [
     [
         sg.Text("Threshold"),
         sg.Slider(
-            range=(0, 1),
+            range=(0.1, 0.9),
             size=(20, 10),
             default_value=0.5,
             resolution=0.1,
-            tick_interval=1.0,
+            tick_interval=0.2,
             orientation="h",
             enable_events=True,
             key="_THRESHOLD_SLIDER_",
@@ -104,7 +104,7 @@ layout_chan_vese = [
     ],
     [
         sg.Text("Steps"),
-        sg.In("40", size=(5, 1), enable_events=True, key="_CV_STEPS_"),
+        sg.In("100", size=(5, 1), enable_events=True, key="_CV_STEPS_"),
         sg.Button("Run", key="_CV_RUN_BUTTON_"),
     ],
 ]
@@ -113,20 +113,20 @@ layout_deep_segmentation = [
     [
         sg.Text("λ"),
         sg.Slider(
-            range=(-7, 8),
+            range=(0, 30),
             size=(15, 7),
-            default_value=0.0,
+            default_value=15,
             disable_number_display=True,
             enable_events=True,
             orientation="h",
             key="_DS_LAMBDA_SLIDER_",
         ),
-        sg.Text("14", size=(10, 1), key="_DS_LAMBDA_OUT_"),
+        sg.Text("15", size=(10, 1), key="_DS_LAMBDA_OUT_"),
     ],
     [
         sg.Text("ε"),
         sg.Slider(
-            range=(-4, 0),
+            range=(-4.0, 0),
             size=(15, 7),
             default_value=-1.0,
             disable_number_display=True,
@@ -138,7 +138,7 @@ layout_deep_segmentation = [
     ],
     [
         sg.Text("Steps"),
-        sg.In("40", size=(5, 1), enable_events=True, key="_DS_STEPS_"),
+        sg.In("100", size=(5, 1), enable_events=True, key="_DS_STEPS_"),
         sg.Button("Run", key="_DS_RUN_BUTTON_"),
     ],
 ]
@@ -189,17 +189,16 @@ seg_threshold = 0.5
 ani = None
 cv_lambda = 1
 cv_epsilon = 0.1
-cv_steps = 40
-ds_lambda = 14
+cv_steps = 100
+ds_lambda = 15
 ds_epsilon = 0.1
-ds_steps = 40
-animation_sleep=100
-
-
+ds_steps = 100
+animation_sleep = 100
+steps_left = 0
 
 # --- NETWORK INITIALISATION ---
 NN = net.ConvNet8(1, 128, 128)
-NN.load_state_dict(torch.load("./Neural_Networks_lunglike/ConvNet8_trained_v2", map_location=torch.device('cpu')))
+NN.load_state_dict(torch.load("./Neural_Networks_lunglike/ConvNet8_trained", map_location=torch.device('cpu')))
 
 
 def draw_contour(contour):
@@ -211,43 +210,47 @@ def draw_contour(contour):
 
 def cv_init():
     print("Init.")
-    global seg_function, contour, seg_object
+    global seg_function, contour, seg_object, steps_left
     seg_object = ChanVese(
         image, u_init=seg_function, segmentation_threshold=seg_threshold
     )
     if seg_function is None:
         seg_function = seg_object.u
+    steps_left = cv_steps
     return (contour,)
 
 
 def cv_animate(i):
-    global contour, seg_function
+    global contour, seg_function, steps_left
     print(f"Step {i}")
     seg_object.update_c()
     seg_object.single_step(cv_lambda, cv_epsilon)
     seg_function = seg_object.u
+    steps_left -= 1
     contour = draw_contour(contour)
     return (contour,)
 
 
 def ds_init():
     print("Init.")
-    global seg_function, contour, seg_object
+    global seg_function, contour, seg_object, steps_left
     seg_object = DeepSegmentation(
         image, NN, u_init=seg_function, segmentation_threshold=seg_threshold
     )
     if seg_function is None:
         seg_function = seg_object.u
+    steps_left = ds_steps
     return (contour,)
 
 
 def ds_animate(i):
-    global contour, seg_function
+    global contour, seg_function, steps_left
     print(f"Step {i}")
     seg_object.update_c()
     seg_object.single_step(ds_lambda, ds_epsilon)
     seg_function = seg_object.u
     contour = draw_contour(contour)
+    steps_left -= 1
     return (contour,)
 
 
@@ -288,7 +291,7 @@ while True:
         if digit_check(window, values, "_CV_STEPS_"):
             cv_steps = int(values["_CV_STEPS_"])
     elif event == "_DS_LAMBDA_SLIDER_":
-        ds_lambda = 14 + 2 * int(values["_DS_LAMBDA_SLIDER_"])
+        ds_lambda = int(values["_DS_LAMBDA_SLIDER_"])
         window.Element("_DS_LAMBDA_OUT_").Update(ds_lambda)
     elif event == "_DS_EPSILON_SLIDER_":
         ds_epsilon = 10 ** int(values["_DS_EPSILON_SLIDER_"])
@@ -300,27 +303,33 @@ while True:
         if digit_check(window, values, "_ANIMATION_SLEEP_"):
             animation_sleep = int(values["_ANIMATION_SLEEP_"])
     elif event == "_CV_RUN_BUTTON_":
-        ani = animation.FuncAnimation(
-            fig,
-            cv_animate,
-            frames=cv_steps,
-            interval=200,
-            repeat=False,
-            blit=False,
-            init_func=cv_init,
-        )
-        fig_agg.draw()
+        if steps_left <= 0:
+            ani = animation.FuncAnimation(
+                fig,
+                cv_animate,
+                frames=cv_steps,
+                interval=animation_sleep,
+                repeat=False,
+                blit=False,
+                init_func=cv_init,
+            )
+            fig_agg.draw()
+        else:
+            sg.popup_error(f"Still running, {steps_left} steps left.")
     elif event == "_DS_RUN_BUTTON_":
-        ani = animation.FuncAnimation(
-            fig,
-            ds_animate,
-            frames=ds_steps,
-            interval=animation_sleep,
-            repeat=False,
-            blit=False,
-            init_func=ds_init,
-        )
-        fig_agg.draw()
+        if steps_left <= 0:
+            ani = animation.FuncAnimation(
+                fig,
+                ds_animate,
+                frames=ds_steps,
+                interval=animation_sleep,
+                repeat=False,
+                blit=False,
+                init_func=ds_init,
+            )
+            fig_agg.draw()
+        else:
+            sg.popup_error(f"Still running, {steps_left} steps left.")
 
 
 window.Close()
