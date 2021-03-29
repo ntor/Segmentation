@@ -199,7 +199,7 @@ animation_sleep=100
 
 # --- NETWORK INITIALISATION ---
 NN = net.ConvNet8(1, 128, 128)
-NN.load_state_dict(torch.load("./Neural_Networks_lunglike/ConvNet8_trained", map_location=torch.device('cpu')))
+NN.load_state_dict(torch.load("./Neural_Networks_lunglike/ConvNet8_trained_v2", map_location=torch.device('cpu')))
 
 
 def draw_contour(contour):
