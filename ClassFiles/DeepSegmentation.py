@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import ClassFiles.ChanVese as cv
 import torch
 from tqdm import tqdm
+from PIL import Image
 
 
 class DeepSegmentation:
@@ -33,6 +34,19 @@ class DeepSegmentation:
             self.c = cv.get_segmentation_mean_colours(
                 self.u, self._image_arr, self.segmentation_threshold
             )
+    
+    def save_segmentation(self, name, path = "."):
+        """saves the image with its segmentation contour superimposed."""
+        plt.imshow(self._image_arr.numpy(), cmap="gray", vmin=0, vmax=1)
+        fig = plt.imshow(self._image_arr.numpy(), cmap="gray", vmin=0, vmax=1)
+        plt.contour(
+            np.clip(self.u.numpy(), self.segmentation_threshold, 1), [0], colors="red"
+        )
+        
+        fig.axes.get_xaxis().set_visible(False)
+        fig.axes.get_yaxis().set_visible(False)
+        
+        plt.savefig(path+"/reconstructed_"+name+".png", format = 'png')
 
     def show_segmentation(self):
         """Plots and shows the image with its segmentation contour superimposed."""
@@ -53,7 +67,7 @@ class DeepSegmentation:
         except RuntimeError:
             self.c = tuple(np.random.rand(2))
 
-    def single_step(self, lmb_reg=15, epsilon=0.1):
+    def single_step(self, lmb_reg=14, epsilon=0.1):
         """Performs a single gradient descent step for 'self.u' along the CEN
         data-fitting term plus the regulariser term. After the gradient step, u
         is clipped in order to lie in [0,1].
@@ -72,13 +86,13 @@ class DeepSegmentation:
         reg = self.regulariser(self.u.unsqueeze(0).unsqueeze(0) - 0.5)
         error = data_fitting + lmb_reg * reg
         
-        print(data_fitting, lmb_reg * reg)
+        #print(data_fitting, lmb_reg * reg)
 
         gradients = torch.autograd.grad(error, self.u)[0]
         self.u = (self.u - epsilon * gradients).detach()
         self.u = torch.clamp(self.u, min=0.0, max=1.0)
 
-    def run(self, steps, lmb_reg=1, epsilon=0.1, show_iterations=False):
+    def run(self, steps, lmb_reg=14, epsilon=0.1, show_iterations=False):
         """Runs 'steps' iteration of 'single_step' with same parameters 'lmb_reg' and
         'epsilon', displaying the iterations with a loading bar if
         'show_iterations' is True.
@@ -88,5 +102,6 @@ class DeepSegmentation:
         if show_iterations:
             step_range = tqdm(step_range)
         for i in step_range:
-            self.single_step(lmb_reg, epsilon)
             self.update_c()
+            self.single_step(lmb_reg, epsilon)
+            
