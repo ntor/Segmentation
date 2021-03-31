@@ -104,7 +104,7 @@ layout_chan_vese = [
     ],
     [
         sg.Text("Steps"),
-        sg.In("100", size=(5, 1), enable_events=True, key="_CV_STEPS_"),
+        sg.In("40", size=(5, 1), enable_events=True, key="_CV_STEPS_"),
         sg.Button("Run", key="_CV_RUN_BUTTON_"),
     ],
 ]
@@ -115,13 +115,13 @@ layout_deep_segmentation = [
         sg.Slider(
             range=(0, 30),
             size=(15, 7),
-            default_value=15,
+            default_value=14,
             disable_number_display=True,
             enable_events=True,
             orientation="h",
             key="_DS_LAMBDA_SLIDER_",
         ),
-        sg.Text("15", size=(10, 1), key="_DS_LAMBDA_OUT_"),
+        sg.Text("14", size=(10, 1), key="_DS_LAMBDA_OUT_"),
     ],
     [
         sg.Text("ε"),
@@ -138,7 +138,7 @@ layout_deep_segmentation = [
     ],
     [
         sg.Text("Steps"),
-        sg.In("100", size=(5, 1), enable_events=True, key="_DS_STEPS_"),
+        sg.In("40", size=(5, 1), enable_events=True, key="_DS_STEPS_"),
         sg.Button("Run", key="_DS_RUN_BUTTON_"),
     ],
 ]
@@ -189,16 +189,16 @@ seg_threshold = 0.5
 ani = None
 cv_lambda = 1
 cv_epsilon = 0.1
-cv_steps = 100
-ds_lambda = 15
+cv_steps = 40
+ds_lambda = 14
 ds_epsilon = 0.1
-ds_steps = 100
+ds_steps = 40
 animation_sleep = 100
 steps_left = 0
 
 # --- NETWORK INITIALISATION ---
 NN = net.ConvNet8(1, 128, 128)
-NN.load_state_dict(torch.load("./Neural_Networks_lunglike/ConvNet8_trained", map_location=torch.device('cpu')))
+NN.load_state_dict(torch.load("./Neural_Networks_lunglike/ConvNet8_trained_v2", map_location=torch.device('cpu')))
 
 
 def draw_contour(contour):
