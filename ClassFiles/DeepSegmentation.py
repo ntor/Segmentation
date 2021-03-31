@@ -29,6 +29,7 @@ class DeepSegmentation:
         if u_init is None:
             self.u = torch.rand(size=self.image_shape)
         else:
+            assert self.image_shape == u_init.shape
             self.u = torch.Tensor(u_init)
             self.c = cv.get_segmentation_mean_colours(
                 self.u, self._image_arr, self.segmentation_threshold

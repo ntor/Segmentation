@@ -238,7 +238,7 @@ def ds_init():
         image, NN, u_init=seg_function, segmentation_threshold=seg_threshold
     )
     if seg_function is None:
-        seg_function = seg_object.u
+        seg_function = seg_object.u.numpy()
     steps_left = ds_steps
     return (contour,)
 
@@ -248,7 +248,7 @@ def ds_animate(i):
     print(f"Step {i}")
     seg_object.update_c()
     seg_object.single_step(ds_lambda, ds_epsilon)
-    seg_function = seg_object.u
+    seg_function = seg_object.u.numpy()
     contour = draw_contour(contour)
     steps_left -= 1
     return (contour,)
@@ -278,7 +278,7 @@ while True:
             fig_agg.draw()
     elif event == "_INIT_BUTTON_":
         if image is not None:
-            seg_function = np.random.random(image.size)
+            seg_function = np.random.random(np.array(image).shape)
             contour = draw_contour(contour)
             fig_agg.draw()
     elif event == "_CV_LAMBDA_SLIDER_":

@@ -24,6 +24,7 @@ class ChanVese:
             self.c = c
 
         if u_init is not None:
+            assert u_init.shape == self._image_arr.shape
             self.u = u_init
         else:
             self.u = self._image_arr
