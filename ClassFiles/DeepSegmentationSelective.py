@@ -33,11 +33,12 @@ class DeepSegmentation:
             self.c = cv.get_segmentation_mean_colours(
                 self.u, self._image_arr, self.segmentation_threshold
             )
-            self.D_M  =torch.Tensor(geodist)
+            self.D_M  =torch.Tensor(geodist)  
 
-    def show_segmentation(self):
+    def show_segmentation(self,tag):
         """Plots and shows the image with its segmentation contour superimposed."""
         plt.imshow(self._image_arr.numpy(), cmap="gray", vmin=0, vmax=1)
+        plt.scatter(tag[0],tag[1],marker='v',color = 'r')
         plt.contour(
             np.clip(self.u.numpy(), self.segmentation_threshold, 1), [0], colors="red"
         )
@@ -54,7 +55,7 @@ class DeepSegmentation:
         except RuntimeError:
             self.c = tuple(np.random.rand(2))
 
-    def single_step(self, lmb_reg=1, epsilon=0.1,gamma = 1):
+    def single_step(self, lmb_reg=1, epsilon=0.1,lmb =1, gamma = 1):
         """Performs a single gradient descent step for 'self.u' along the CEN
         data-fitting term plus the regulariser term. After the gradient step, u
         is clipped in order to lie in [0,1].
@@ -69,10 +70,10 @@ class DeepSegmentation:
         self.u.requires_grad   = True
         self.D_M.requires_grad = False
         
-        data_fitting = cv.CEN_data_fitting_energy(
+        data_fitting = lmb* cv.CEN_data_fitting_energy(
             self.u, self.c[0], self.c[1], self._image_arr
-        ) 
-        + gamma* torch.sum(self.D_M*self.u)
+        ) - gamma* torch.sum(self.D_M*self.u)         # note this should be DM * (1- self.u but wont affect gradient) 
+        
         reg = self.regulariser(self.u.unsqueeze(0).unsqueeze(0) - 0.5)
         error = data_fitting + lmb_reg * reg
 
@@ -80,7 +81,7 @@ class DeepSegmentation:
         self.u = (self.u - epsilon * gradients).detach()
         self.u = torch.clamp(self.u, min=0.0, max=1.0)
 
-    def run(self, steps, lmb_reg=1, epsilon=0.1, gamma =1, show_iterations=False):
+    def run(self, steps, lmb_reg=1, epsilon=0.1, lmb=1, gamma =1, show_iterations=False):
         """Runs 'steps' iteration of 'single_step' with same parameters 'lmb_reg' and
         'epsilon', displaying the iterations with a loading bar if
         'show_iterations' is True.
@@ -90,7 +91,7 @@ class DeepSegmentation:
         if show_iterations:
             step_range = tqdm(step_range)
         for i in step_range:
-            self.single_step(lmb_reg, epsilon, gamma)
+            self.single_step(lmb_reg, epsilon, lmb, gamma)
             self.update_c()
 
 

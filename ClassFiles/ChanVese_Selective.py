@@ -12,7 +12,7 @@ import scipy
 
 
 class ChanVeseSelect:
-    def __init__(self, image, tag, segmentation_threshold=0.8, c=None, beta_G = 10000, epsilon_v =0.0001):     #DONE__add tag position and weight 'theta' for geodesic term 
+    def __init__(self, image, markers, segmentation_threshold=0.8, c=None, beta_G = 10000, epsilon_v =0.0001):     #DONE__add tag position and weight 'theta' for geodesic term 
         self._image_arr = np.array(image, dtype=float) / 255
         self.image_shape = self._image_arr.shape
         self.channels = len(image.getbands())
@@ -33,7 +33,7 @@ class ChanVeseSelect:
         #self.b  = 4*epsilon_v/((1+epsilon_v)**(3/2))
         #self.ze = (1 - np.sqrt(1-epsilon_v))/2
         #normalised geodesic distance (tag has to be transposed for geo image-> matrix coordinates)
-        self.geo = gdist.geodesic_distance(self._image_arr,[np.array([tag[1],tag[0]])])/np.amax(gdist.geodesic_distance(self._image_arr,[np.array([tag[1],tag[0]])]))
+        self.geo = gdist.geodesic_distance(np.array(image),markers)/np.amax(gdist.geodesic_distance(np.array(image),markers))
     
     def single_step(self, lmb=0.5, epsilon=0.1, theta=0.2,gamma =1):
         """Update 'self.u', as well as the helper functions 'self._u_interm' and
@@ -59,7 +59,8 @@ class ChanVeseSelect:
         )
         tmp = lmb * (
             (self._image_arr - self.c[0]) ** 2 - (self._image_arr - self.c[1]) ** 2
-        )-gamma*self.geo
+        )+gamma*(0.4-self.geo) 
+        # for some reason works better with 0.4, o/w too negative. No idea why this is needed?? smaller gamma makes data fitting fill in unwanted shapes but bigger gamma makes it 0 everythwhere. Mikes algorithm written out below may fix this but need to remove the full matricies as its too slow ow. 
         u_update = np.clip(self.u + epsilon * (div(self._z) - tmp), 0, 1)
         self._u_interm = (1 + theta) * u_update - theta * self.u
         self.u = u_update
