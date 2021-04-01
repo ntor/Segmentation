@@ -8,12 +8,14 @@ from torch.utils.data import Dataset
 from PIL import Image
 from ClassFiles.ShapeGenerator import ShapeGenerator
 from ClassFiles.ChanVese import ChanVese
+from ClassFiles.ChanVese_Selective import ChanVeseSelect
 from tqdm import tqdm
 import ClassFiles.EvaluationMetrics as EM
 import copy
 import math
 import ClassFiles.DeepSegmentationSelective as dst
 import ClassFiles.DeepSegmentation as ds
+from ClassFiles.GeodesicDistance import geodesic_distance as dist
 
 # This file implements two torch Dataset classes, 'ImageDataset' and
 # 'SegmentationDataset', and a function 'generate_data'. The datasets are
@@ -318,6 +320,7 @@ def generate_data_NN_tagged(times, root_dir,NN, NetName, size=(128, 128),  appen
                     new_image_data.append(item)
             # update image data
             cleanimage.putdata(new_image_data)
+            clean_seg = np.array(cleanimage)
             # now all white :) 
             
             
@@ -336,19 +339,36 @@ def generate_data_NN_tagged(times, root_dir,NN, NetName, size=(128, 128),  appen
             #add blur
             shapes.add_blur(sig=1.5)
             
-            cvshapes = ChanVeseSelect(shapes.image,centre)
-            cvshapes.run(500,gamma=1,lmb=2,theta=0.1)
-
-            # they are meant to be reshaped inside Jaccard but python is
-            # ignoring that for some reason so Im doing it here :))))
-            u1 = np.reshape(cvshapes.u, np.size(cvshapes.u))
-            u2 = np.reshape(clean_seg, np.size(clean_seg))
-            evaluation = EM.Jaccard(u1, u2)
+            centre = np.array(np.rint(centre).astype(int))
+            markers = [np.array([centre[1],centre[0]])]
+            
+            working = 0
+            try:
+                dist(np.array(shapes.image)/255,markers)
+                working += 1
+            except:
+                print(":'(")
+                working = 0
+            
+            if working == 1:
+                print("worked")
+                cvshapes = ChanVeseSelect(shapes.image,markers)
+                cvshapes.run(2000,gamma=4,lmb=2,theta=0.005)
+                # they are meant to be reshaped inside Jaccard but python is
+                # ignoring that for some reason so Im doing it here :))))
+                u1 = np.reshape(cvshapes.u, np.size(cvshapes.u))
+                u2 = np.reshape(clean_seg, np.size(clean_seg))
+                evaluation = EM.Jaccard(u1, u2)  
+                print(evaluation)
+        
             
         dsim = dst.DeepSegmentation(shapes.image,NN,cvshapes.geo,cvshapes.u)     
-        dsim.run(1000,lmb_reg=10, epsilon=0.001, gamma=10, show_iterations=True)
+        dsim.run(1000,lmb_reg=10, epsilon=0.001, lmb=1, gamma=1, show_iterations=True)
 
         # save all the images
+        Image.fromarray(255*cvshapes.geo).convert("L").save(
+            fp=os.path.join(sample_folder, "geomap.png"), format="PNG"
+        )
         cleanimage.save(
             fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["clean"]), format="PNG"
         )
