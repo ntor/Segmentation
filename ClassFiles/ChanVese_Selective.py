@@ -65,101 +65,6 @@ class ChanVeseSelect:
         self._u_interm = (1 + theta) * u_update - theta * self.u
         self.u = u_update
 
-
-    """
-    def single_step(self, tau=0.01, mu = 1, lmb=1, theta=1, epsilon2 = 0.0001):
-        Update 'self.u', according to 'Additive Operator Splitting Algorithm'
-        
-        see Michael Roberts · Ke Chen · Klaus L. Irion (2018)
-        
-        https://link.springer.com/content/pdf/10.1007/s10851-018-0857-2.pdf
-        
-        Algorithm 1
-
-        
-        #update c_i is done outside the single step 
-        self.update_c()
-        
-        #Calculate r
-        
-        tmp = lmb * (
-            (self._image_arr - self.c[0]) ** 2 - (self._image_arr - self.c[1]) ** 2
-        )
-        
-        GEO = theta * (self.geo)      
-        
-        r = tmp + GEO
-        
-        #Calculate alpha
-        alpha = np.amax(abs(r))
-        
-        #Calcuate f 
-        
-        f = r + alpha*self.vprime()
-        
-        #Update B
-        
-        I = np.eye(self.image_shape[0],self.image_shape[1])
-        
-        b = self.b*(np.where(1+self.ze> self.u, 1, 0)*np.where(self.u >1-self.ze , 1, 0))+ (np.where(self.u<self.ze, 1, 0)*np.where(-self.ze<self.u, 1, 0))
-
-        # Update A1 and A2
-        # As A acts on each column/row of u differently to write it as a matrix for each column/row
-        # if this is too slow, there is a paper on how to do this more efficiently cited in Mike's paper
-        
-        G  = np.divide(self.g, np.sqrt(np.add(sum(np.square(np.gradient(self.u))),epsilon2)))
-        
-        G_iplus  = (G + scipy.ndimage.shift(G, [1,0]))/2
-        G_jplus  = (G + scipy.ndimage.shift(G, [0,1]))/2
-        G_iminus = (G + scipy.ndimage.shift(G,[-1,0]))/2
-        G_jminus = (G + scipy.ndimage.shift(G,[0,-1]))/2
-        
-        
-        A1       = np.zeros((I.shape[0],I.shape[0],I.shape[1]))
-        IB1      = np.zeros((I.shape[0],I.shape[0],I.shape[1]))
-        A2       = np.zeros((I.shape[1],I.shape[1],I.shape[0]))
-        IB2      = np.zeros((I.shape[1],I.shape[1],I.shape[0]))
-        for j in range(I.shape[1]):
-            
-            IB1[:,:,j] = np.linalg.inv(I+tau*alpha*np.diag(b[:,j]))
-            
-            for i,k in np.ndindex(I.shape):
-                if k == i:
-                     A1[i,k,j] = -(G_iplus+G_iminus)[i,j]
-                if k == i-1:
-                     A1[i,k,j] = (G_iminus)[i,j]
-                if k == i+1:
-                     A1[i,k,j] = (G_iplus)[i,j]
-
-        for i in range(I.shape[0]):
-
-            IB2[:,:,i] = np.linalg.inv(I+tau*alpha*np.diag(b[i,:]))
-           
-            for j,k in np.ndindex(I.shape):
-                if k == j:
-                     A2[k,j,i] = -(G_jplus+G_jminus)[i,j]
-                if k == j-1:
-                     A2[k,j,i] = (G_jminus)[i,j]
-                if k == j+1:
-                     A2[k,j,i] = (G_jplus)[i,j]
-        # Update u
-        u1 = np.zeros(I.shape)
-        u2 = np.zeros(I.shape)          
-                                       
-        for j in range(I.shape[1]):
-            u1[:,j] = triverse((I-2*mu*tau*triverse(IB1[:,:,j],A1[:,:,j])), (self.u[:,j]+ tau*triverse(IB1[:,:,j],f[:,j])) )/2
-            
-        for i in range(I.shape[0]):
-            u2[i,:] = triansverse((I-2*mu*tau*triverse(IB2[:,:,i],A2[:,:,i])), (self.u[i,:]+ tau*triverse(IB2[:,:,i],f[i,:])) ) /2
- 
-        self.u =  u1+u2
-    
-    def vprime(self,epsilon_v = 0.0001):
-        raw      = (4*self.u-2)/np.sqrt((np.add(np.square(np.add(2*self.u,-1)),epsilon_v)))
-        support1 = np.where(1-self.ze> self.u, 1, 0)
-        support2 = np.where(self.u>self.ze, 1, 0)
-        return raw*support1*support2
-    """
     
     def update_c(self):
         """Update the average colours in the segmentation domain and its complement. See
@@ -250,43 +155,6 @@ class ChanVeseSelect:
         if print_total_steps:
             print("Total steps until stabilisation: {}".format(i))
 
-def triverse(A,b):
-        Ab = diagonal_form(A)
-        return scipy.linalg.solve_banded((1,1),Ab,b)
-    
-def triansverse(A,b):
-        AT = np.transpose(A)
-        BT = np.transpose(b)
-        CT = triverse(AT,BT)
-        return np.transpose(CT)
-    
-def diagonal_form(a, upper = 1, lower= 1):
-        """
-        a is a numpy square matrix
-        this function converts a square matrix to diagonal ordered form
-        returned matrix in ab shape which can be used directly for scipy.linalg.solve_banded
-        """
-        n = a.shape[1]
-        assert(np.all(a.shape ==(n,n)))
-
-        ab = np.zeros((2*n-1, n))
-
-        for i in range(n):
-            ab[i,(n-1)-i:] = np.diagonal(a,(n-1)-i)
-
-        for i in range(n-1): 
-            ab[(2*n-2)-i,:i+1] = np.diagonal(a,i-(n-1))
-
-        mid_row_inx = int(ab.shape[0]/2)
-        upper_rows = [mid_row_inx - i for i in range(1, upper+1)]
-        upper_rows.reverse()
-        upper_rows.append(mid_row_inx)
-        lower_rows = [mid_row_inx + i for i in range(1, lower+1)]
-        keep_rows = upper_rows+lower_rows
-        ab = ab[keep_rows,:]
-
-        return ab
-        
     
     
 # Obsolete divergence function. Dropped in favor of the simpler
@@ -421,3 +289,132 @@ def clip_vector_field(z, threshold=1):
 
     return np.apply_along_axis(criterion, -1, z)
     # return z / ((1 + np.maximum(0, np.apply_along_axis(np.linalg.norm, -1, z) - 1))[...,np.newaxis])
+    
+     def robert_spencer_single_step(self, tau=0.01, mu = 1, lmb_1=1,lmb_2=1, theta=1, gamma_1 =1, gamma_2 =1, epsilon2 = 0.0001):
+        """
+        Update 'self.u', according to 'Additive Operator Splitting Algorithm' 
+        in Robert-Spencer https://arxiv.org/abs/1811.08751
+        
+        (see Michael Roberts · Ke Chen · Klaus L. Irion (2018) for illustration of algorithm
+        https://link.springer.com/content/pdf/10.1007/s10851-018-0857-2.pdf
+        Algorithm 1
+        
+        But edit f_2 to that of 
+        https://arxiv.org/abs/1811.08751)
+        
+        
+        """
+
+        
+        #update c_i is done outside the single step 
+        self.update_c()
+        
+        #update g
+        self.g  = 1/(1+beta_G*np.sum(np.square(np.gradient(self._image_arr))))
+        
+        #Calculate r
+        
+        f_1 =  (self._image_arr - self.c_1) ** 2 
+            
+        f_2 = np.where(self.c[0]-gamma_1<= self.u <= self.c[0] , 1+(self.u- slef.c[0])/gamma_1 , 0) + np.where(self.c[0]< self.u <= self.c[0] + gamma_2, 1-(self.u- slef.c[0])/gamma_2 , 0) 
+                
+        GEO = theta * (self.geo)      
+        
+        r =  lmb_1*f_1+lmb_2*f_2 + theta*GEO
+        
+        #Calculate alpha
+        alpha = np.amax(abs(r))
+        
+        #Calcuate f 
+        
+        f = r + alpha*self.vprime()
+        
+        #Update B
+        
+        I = np.eye(self.image_shape[0],self.image_shape[1])
+        
+        b = self.b*(np.where(1+self.ze> self.u, 1, 0)*np.where(self.u >1-self.ze , 1, 0))+ (np.where(self.u<self.ze, 1, 0)*np.where(-self.ze<self.u, 1, 0))
+
+        # Update A1 and A2 diagonals
+
+        G  = np.divide(self.g, np.sqrt(np.add(sum(np.square(np.gradient(self.u))),epsilon2)))
+        
+        G_iplus  = (G + scipy.ndimage.shift(G, [1,0]))/2
+        G_jplus  = (G + scipy.ndimage.shift(G, [0,1]))/2
+        G_iminus = (G + scipy.ndimage.shift(G,[-1,0]))/2
+        G_jminus = (G + scipy.ndimage.shift(G,[0,-1]))/2
+        
+        
+        #A1       = np.zeros((I.shape[0],I.shape[0],I.shape[1]))
+        A1_diag   = np.zeros((I.shape[0],I.shape[1]))
+        A1_upper  = np.zeros((I.shape[0],I.shape[1]))
+        A1_lower  = np.zeros((I.shape[0],I.shape[1]))
+        invIB1    = np.zeros((I.shape[0],I.shape[1]))
+        
+        
+        A2_diag   = np.zeros((I.shape[1],I.shape[0]))
+        A2_upper  = np.zeros((I.shape[1]-1,I.shape[0]))
+        A2_lower  = np.zeros((I.shape[1]-1,I.shape[0]))
+        
+        
+        for j in range(I.shape[1]):
+            
+            invIB1[:,j] = np.reciprocal( np.eye(I.shape[0])+tau*alpha*b[:,j] )
+            
+            for i,k in np.ndindex(I.shape):
+                if k == i:
+                     A1_diag[i,j] = -(G_iplus+G_iminus)[i,j]
+                if k == i-1:
+                     A1_upper[i,j] = (G_iminus)[i,j]
+                if k == i+1:
+                     A1_lower[i,j] = (G_iplus)[i,j]
+
+        for i in range(I.shape[0]):
+
+            invIB2[:,i] = np.reciprocal( np.eye(I.shape[1])+tau*alpha*b[i,:] )
+           
+            for j,k in np.ndindex(I.shape):
+                if k == j:
+                     A2_diag [j,i] = -(G_jplus+G_jminus)[i,j]
+                if k == j-1:
+                     A2_upper[j,i] = (G_jminus)[i,j]
+                if k == j+1:
+                     A2_lower[j,i] = (G_jplus)[i,j]
+                        
+                        
+        Q_1_diag = np.multiply(invIB1,A1_diag)             
+        Q_2_diag = np.multiply(invIB2,A2_diag)                         
+                        
+                        
+        # Update u
+        u1 = np.zeros(I.shape)
+        u2 = np.zeros(I.shape)          
+                                       
+        for j in range(I.shape[1]):
+            u1[:,j] = scipy.linalg.solve_banded( (1, 1),
+                                                 np.array([A1_upper[:,j], Q_1_diag[:,j] , A1_lower[:,j] ])
+                                                 self.u[:,j]+ tau*np.multiply(invIB1[:,j],f[:,j])   
+                                               )/2
+            
+        for i in range(I.shape[0]):
+            u2[i,:] = scipy.linalg.solve_banded( (1, 1),
+                                                 np.array([A2_upper[:,i], Q_2_diag[:,i] , A2_lower[:,i] ])
+                                                 self.u[i,:]+ tau*np.multiply(invIB2[:,i],f[i,:])   
+                                               )/2
+ 
+        self.u =  u1+u2
+    
+    def vprime(self,epsilon_v = 0.0001):
+        raw      = (4*self.u-2)/np.sqrt((np.add(np.square(np.add(2*self.u,-1)),epsilon_v)))
+        support1 = np.where(1-self.ze> self.u, 1, 0)
+        support2 = np.where(self.u>self.ze, 1, 0)
+        return raw*support1*support2
+
+
+    
+    
+    
+    
+    
+    
+    
