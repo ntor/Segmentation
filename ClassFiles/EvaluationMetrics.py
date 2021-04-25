@@ -1,5 +1,6 @@
 import numpy as np
 from hausdorff import hausdorff_distance
+from skimage import measure
 
 def Jaccard(u1, u2, threshold=0.8):
     intersection = 0
@@ -40,7 +41,7 @@ def Sorensen(u1, u2, threshold=0.8):
 
 
 
-def Hausdorff(u1,u2,threshold=0.8)
+def Hausdorff(u1,u2,threshold=0.1):
 
     contours1 = np.concatenate(measure.find_contours(u1, threshold))
     contours2 = np.concatenate(measure.find_contours(u2, threshold))

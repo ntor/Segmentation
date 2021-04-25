@@ -241,26 +241,18 @@ def generate_data_NN(times, root_dir,NN, NetName, size=(128, 128), append=True):
                    fp=os.path.join(sample_folder,NetName+".png"), format="PNG"
         )
 
-        #save the Metrics
-        cv  = np.reshape(cvshapes.u, np.size(cvshapes.u))        
-        dseg  = np.reshape(np.array(dsim.u), np.size(clean_seg))
-        cln = np.reshape(clean_seg, np.size(clean_seg))
+        #save the Hausdorff distance       
         np.save(
-            file=os.path.join(sample_folder, "Jaccard_"+"cv"+".npy"),
-            arr = EM.Jaccard(cv, cln),
+            file=os.path.join(sample_folder, "Hdist_"+"cv"+".npy"),
+            arr = EM.Hausdorff(cvshapes.u, clean_seg),
         )
         np.save(
-            file=os.path.join(sample_folder, "Jaccard_"+NetName+".npy"),
-            arr = EM.Jaccard(dseg, cln),
-        )  
-        np.save(
-            file=os.path.join(sample_folder, "Sorensen_"+"cv"+".npy"),
-            arr = EM.Sorensen(cv, cln),
+            file=os.path.join(sample_folder, "Hdist_"+NetName+".npy"),
+            arr = EM.Hausdorff(np.array(dsim.u), clean_seg),
         )
-        np.save(
-            file=os.path.join(sample_folder, "Sorensen_"+NetName+".npy"),
-            arr = EM.Sorensen(dseg,cln),
-        )          
+           
+
+
 
         
         
@@ -404,24 +396,13 @@ def generate_data_NN_tagged(times, root_dir,NN, NetName, size=(128, 128),  appen
         )
         
         #save the Metrics
-        cv  = np.reshape(cvshapes.u, np.size(cvshapes.u))        
-        dseg  = np.reshape(np.array(dsim.u), np.size(clean_seg))
-        cln = np.reshape(clean_seg, np.size(clean_seg))
         np.save(
-            file=os.path.join(sample_folder, "Jaccard_"+"cv"+".npy"),
-            arr = EM.Jaccard(cv, cln),
+            file=os.path.join(sample_folder, "Hdist_"+"cv"+".npy"),
+            arr = EM.Hausdorff(cvshapes.u, clean_seg),
         )
         np.save(
-            file=os.path.join(sample_folder, "Jaccard_"+NetName+".npy"),
-            arr = EM.Jaccard(dseg, cln),
-        )  
-        np.save(
-            file=os.path.join(sample_folder, "Sorensen_"+"cv"+".npy"),
-            arr = EM.Sorensen(cv, cln),
-        )
-        np.save(
-            file=os.path.join(sample_folder, "Sorensen_"+NetName+".npy"),
-            arr = EM.Sorensen(dseg,cln),
+            file=os.path.join(sample_folder, "Hdist_"+NetName+".npy"),
+            arr = EM.Hausdorff(np.array(dsim.u), clean_seg),
         )          
 
 def rotate_around_point_highperf(xy, theta, origin=(0, 0)):
