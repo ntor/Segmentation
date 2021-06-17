@@ -5,6 +5,20 @@
 *Overleaf Document*: [[https://www.overleaf.com/2716186289qdcsnxyfpmsn][Link]]
 
 * Progress
+- [ ] Synthetic dataset
+  + [ ] Different-sized ovals
+  + [ ] Triangles, squares, etc.
+- [ ] Demonstrate generalisability of model for global segmentation
+  + [ ] Train on one synthetic dataset and apply to qualitatively different data
+  + [ ] Compare with UNet and (hopefully) show we perform better
+  + [ ] Train on triangles and test on squares
+  + [ ] Train on ellipses and test on annuli
+- [ ] Apply the trained global segmentation regulariser on selective segmentation
+- [ ] Test on Medical Data
+  + [ ] Extract suitable images from medical dataset
+  + [ ] Pipeline for bringing them into a standard format
+  + [ ] Train network on larger images or implement some way of partitioning and
+    glueing back together
 - [-] Implement an artifical data-generator
   + [X] Artifical image generator (polygons, ellipses, noise) [James]
   + [X] Class wrapper for generator [Peter]
@@ -20,30 +34,32 @@
   + [X] Classifier network [Lucas]
   + [X] Reconstruction routine (Algorithm 2) [Lucas]
 - [-] Logging, quality, etc.
-  + [ ] Implement an animation for ChanVese and DeepSegmentation
-  + [X] Implement "quality" quantities (Jaccard/IOU, DICE, Haussdorf)
-- [ ] Estimation of regularisation parameter
-- [ ] Selective Segmentation
-  - [ ] Get Michael's code running
-  - [ ] Implement a function
-- [X] Implement different classifier architectures
+  + [X] Implement an animation for ChanVese and DeepSegmentation [Peter]
+  + [X] Implement "quality" quantities (Jaccard/IOU, DICE, Haussdorf) [James]
+  + [ ] Use "Confusion Matrix" and put these into the dashboard.
+- [X] Estimation of regularisation parameter [Lucas]
+- [X] Selective Segmentation
+  - [X] Implement Michael's geodesic distance code [Peter]
+  - [X] Implement segmentation classes with the selective data-fitting term [James]
+- [X] Implement different classifier architectures [Lucas]
+
 
 
 
 * TODO Jobs
+- [ ] Send Mike the code with problems
+- [ ] Study whether it is beneficial to make the segmentations binary in training.
+  (Making them binary means dropping the "data manifold hypothesis")
+- [ ] Optimising backpropagation in reconstruction via retain_graph, etc.?
+- [ ] Wrap the regularisers, such that they automatically threshold/normalise images
+- [ ] What's about the "normalisation" of the geodesic distance?
 - [X] Put the algorithm2 stuff into a framework in line with ChanVese.py
 - [X] Optional reconstruction via clipping w/o penalty
-- [ ] Optimising backpropagation in reconstruction via retain_graph, etc.?
-- [ ] Animation of segmentation contour during regularisation
+- [X] Animation of segmentation contour during regularisation
 - Organisation (optional)
   + [X] Move test files and notebooks to an independent directory, but change exec. path
   + [X] Access to computation resources
   + [X] Rename files according to conventions
-
-
-
-* Ideas
-- Abstract framework with "Regulariser" classes?
 
 
 * Overview

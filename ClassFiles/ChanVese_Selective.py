@@ -12,7 +12,16 @@ import scipy
 
 
 class ChanVeseSelect:
-    def __init__(self, image, markers, segmentation_threshold=0.8, c=None, beta_G = 10000, epsilon_v =0.0001):     #DONE__add tag position and weight 'theta' for geodesic term 
+    # DONE: add tag position and weight 'theta' for geodesic term
+    def __init__(
+        self,
+        image,
+        markers,
+        segmentation_threshold=0.8,
+        c=None,
+        beta_G=10000,
+        epsilon_v=0.0001,
+    ):
         self._image_arr = np.array(image, dtype=float) / 255
         self.image_shape = self._image_arr.shape
         self.channels = len(image.getbands())
@@ -29,13 +38,15 @@ class ChanVeseSelect:
         self._u_interm = np.array(self.u)
         self._z = (np.random.random((self._dim,) + self.image_shape) - 0.5) / self._dim
         # constants used in AOS algorithm
-        #self.g  = 1/(1+beta_G*np.sum(np.square(np.gradient(self._image_arr))))
-        #self.b  = 4*epsilon_v/((1+epsilon_v)**(3/2))
-        #self.ze = (1 - np.sqrt(1-epsilon_v))/2
-        #normalised geodesic distance (tag has to be transposed for geo image-> matrix coordinates)
-        self.geo = gdist.geodesic_distance(np.array(image),markers)/np.amax(gdist.geodesic_distance(np.array(image),markers))
-    
-    def single_step(self, lmb=0.5, epsilon=0.1, theta=0.2,gamma =1):
+        # self.g  = 1/(1+beta_G*np.sum(np.square(np.gradient(self._image_arr))))
+        # self.b  = 4*epsilon_v/((1+epsilon_v)**(3/2))
+        # self.ze = (1 - np.sqrt(1-epsilon_v))/2
+        # normalised geodesic distance (tag has to be transposed for geo image-> matrix coordinates)
+        self.geo = gdist.geodesic_distance(np.array(image), markers) / np.amax(
+            gdist.geodesic_distance(np.array(image), markers)
+        )
+
+    def single_step(self, lmb=0.5, epsilon=0.1, theta=0.2, gamma=1):
         """Update 'self.u', as well as the helper functions 'self._u_interm' and
         'self._z', according to a 'primal-dual' algorithm (Chambolla-Pock, 2011)
         for minimisation of the Chan-Esedoglu-Nikolova functional.
@@ -54,17 +65,18 @@ class ChanVeseSelect:
 
         """
 
-        self._z = clip_vector_field(
-            self._z + epsilon * gradient(self._u_interm)
-        )
+        self._z = clip_vector_field(self._z + epsilon * gradient(self._u_interm))
         tmp = lmb * (
             (self._image_arr - self.c[0]) ** 2 - (self._image_arr - self.c[1]) ** 2
-        )+gamma*(0.4-self.geo) 
-        # for some reason works better with 0.4, o/w too negative. No idea why this is needed?? smaller gamma makes data fitting fill in unwanted shapes but bigger gamma makes it 0 everythwhere. Mikes algorithm written out below may fix this but need to remove the full matricies as its too slow ow. 
+        ) + gamma * (0.4 - self.geo)
+        # for some reason works better with 0.4, o/w too negative. No idea why
+        # this is needed?? smaller gamma makes data fitting fill in unwanted
+        # shapes but bigger gamma makes it 0 everythwhere. Mikes algorithm
+        # written out below may fix this but need to remove the full matricies
+        # as its too slow ow.
         u_update = np.clip(self.u + epsilon * (div(self._z) - tmp), 0, 1)
         self._u_interm = (1 + theta) * u_update - theta * self.u
         self.u = u_update
-
 
     """
     def single_step(self, tau=0.01, mu = 1, lmb=1, theta=1, epsilon2 = 0.0001):
@@ -160,7 +172,7 @@ class ChanVeseSelect:
         support2 = np.where(self.u>self.ze, 1, 0)
         return raw*support1*support2
     """
-    
+
     def update_c(self):
         """Update the average colours in the segmentation domain and its complement. See
         'get_segmentation_mean_colours' for more information.
@@ -194,7 +206,7 @@ class ChanVeseSelect:
             step_range = tqdm(step_range)
 
         for i in step_range:
-            self.single_step(lmb, epsilon, theta,gamma)
+            self.single_step(lmb, epsilon, theta, gamma)
             if (i + 1) % update_c_interval == 0:
                 self.update_c()
                 if show_energy:
@@ -250,70 +262,52 @@ class ChanVeseSelect:
         if print_total_steps:
             print("Total steps until stabilisation: {}".format(i))
 
-def triverse(A,b):
-        Ab = diagonal_form(A)
-        return scipy.linalg.solve_banded((1,1),Ab,b)
-    
-def triansverse(A,b):
-        AT = np.transpose(A)
-        BT = np.transpose(b)
-        CT = triverse(AT,BT)
-        return np.transpose(CT)
-    
-def diagonal_form(a, upper = 1, lower= 1):
-        """
-        a is a numpy square matrix
-        this function converts a square matrix to diagonal ordered form
-        returned matrix in ab shape which can be used directly for scipy.linalg.solve_banded
-        """
-        n = a.shape[1]
-        assert(np.all(a.shape ==(n,n)))
 
-        ab = np.zeros((2*n-1, n))
+def triverse(A, b):
+    Ab = diagonal_form(A)
+    return scipy.linalg.solve_banded((1, 1), Ab, b)
 
-        for i in range(n):
-            ab[i,(n-1)-i:] = np.diagonal(a,(n-1)-i)
 
-        for i in range(n-1): 
-            ab[(2*n-2)-i,:i+1] = np.diagonal(a,i-(n-1))
+def triansverse(A, b):
+    AT = np.transpose(A)
+    BT = np.transpose(b)
+    CT = triverse(AT, BT)
+    return np.transpose(CT)
 
-        mid_row_inx = int(ab.shape[0]/2)
-        upper_rows = [mid_row_inx - i for i in range(1, upper+1)]
-        upper_rows.reverse()
-        upper_rows.append(mid_row_inx)
-        lower_rows = [mid_row_inx + i for i in range(1, lower+1)]
-        keep_rows = upper_rows+lower_rows
-        ab = ab[keep_rows,:]
 
-        return ab
-        
-    
-    
-# Obsolete divergence function. Dropped in favor of the simpler
-# finite-difference version "div"
+def diagonal_form(a, upper=1, lower=1):
+    """
+    a is a numpy square matrix
+    this function converts a square matrix to diagonal ordered form
+    returned matrix in ab shape which can be used directly for scipy.linalg.solve_banded
+    """
+    n = a.shape[1]
+    assert np.all(a.shape == (n, n))
 
-# def divergence(f):
-#     """Computes the divergence of the vector field f.
+    ab = np.zeros((2 * n - 1, n))
 
-#     Parameters:
+    for i in range(n):
+        ab[i, ((n - 1) - i):] = np.diagonal(a, (n - 1) - i)
 
-#     'f' (ndarray): array of shape (L1,...,Ld,d) representing a discretised
-#     vector field on a d-dimensional lattice
+    for i in range(n - 1):
+        ab[(2 * n - 2) - i, :(i + 1)] = np.diagonal(a, i - (n - 1))
 
-#     Returns: ndarray of shape (L1,...,Ld)
-#     """
+    mid_row_inx = int(ab.shape[0] / 2)
+    upper_rows = [mid_row_inx - i for i in range(1, upper + 1)]
+    upper_rows.reverse()
+    upper_rows.append(mid_row_inx)
+    lower_rows = [mid_row_inx + i for i in range(1, lower + 1)]
+    keep_rows = upper_rows + lower_rows
+    ab = ab[keep_rows, :]
 
-#     num_dims = len(f.shape) - 1
-#     return np.ufunc.reduce(
-#         np.add, [np.gradient(f[..., i], axis=i) for i in range(num_dims)]
-#     )
+    return ab
 
 
 def div(grad):
-    '''
+    """
     Compute the divergence of a gradient
     Courtesy : E. Gouillart - https://github.com/emmanuelle/tomo-tv/
-    '''
+    """
     res = np.zeros(grad.shape[1:])
     for d in range(grad.shape[0]):
         this_grad = np.rollaxis(grad[d], d)
@@ -325,13 +319,18 @@ def div(grad):
 
 
 def gradient(img):
-    '''
+    """
     Compute the gradient of an image as a numpy array
     Courtesy : E. Gouillart - https://github.com/emmanuelle/tomo-tv/
-    '''
-    shape = [img.ndim, ] + list(img.shape)
+    """
+    shape = [
+        img.ndim,
+    ] + list(img.shape)
     gradient = np.zeros(shape, dtype=img.dtype)
-    slice_all = [0, slice(None, -1),]
+    slice_all = [
+        0,
+        slice(None, -1),
+    ]
     for d in range(img.ndim):
         gradient[slice_all] = np.diff(img, axis=d)
         slice_all[0] = d + 1

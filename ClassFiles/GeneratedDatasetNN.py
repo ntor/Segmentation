@@ -147,7 +147,7 @@ def generate_data(times, root_dir, size=(128, 128), append=True):
         )
 
 
-def generate_data_NN(times, root_dir,NN, NetName, size=(128, 128), append=True):
+def generate_data_NN(times, root_dir, NN, NetName, size=(128, 128), append=True):
     if append:
         start_index = sum(
             1 for s in os.listdir(root_dir) if s.startswith(SAMPLE_FOLDER_PREFIX)
@@ -172,13 +172,14 @@ def generate_data_NN(times, root_dir,NN, NetName, size=(128, 128), append=True):
             shapes.add_ellipse(times=np.random.randint(1, 3), size=0.2 * 128)
 
             cleanimage = shapes.image.copy()
-            
-            #need to trun the grey btis white for the clean segmentation 
+
+            # need to turn the grey bits white for the clean segmentation
             datas = cleanimage.getdata()
             new_image_data = []
             for item in datas:
                 # change all grey pixels to white
-                if item in list(range(50,255)):
+                # REVIEW: Do this with thresholds
+                if item in list(range(50, 255)):
                     new_image_data.append(255)
                 else:
                     new_image_data.append(item)
@@ -186,16 +187,16 @@ def generate_data_NN(times, root_dir,NN, NetName, size=(128, 128), append=True):
             # update image data
             cleanimage.putdata(new_image_data)
             clean_seg = np.array(cleanimage)
-            # now all white :) 
-            
-            #add some grey/white holes 
+            # now all white :)
+
+            # add some grey/white holes
             shapes.add_holes(
                 numholes=np.random.randint(40, 50),
                 width=np.random.randint(3, 4),
             )
-            #add blur
+            # add blur
             shapes.add_blur(sig=1.5)
-            
+
             cvshapes = ChanVese(shapes.image)
             cvshapes.run(steps=500, show_iterations=False)
 
@@ -204,10 +205,9 @@ def generate_data_NN(times, root_dir,NN, NetName, size=(128, 128), append=True):
             u1 = np.reshape(cvshapes.u, np.size(cvshapes.u))
             u2 = np.reshape(clean_seg, np.size(clean_seg))
             evaluation = EM.Jaccard(u1, u2)
-            
-        
-        dsim = ds.DeepSegmentation(shapes.image,NN,cvshapes.u)     
-        dsim.run(1000,lmb_reg=10, epsilon=0.001, show_iterations=True)
+
+        dsim = ds.DeepSegmentation(shapes.image, NN, cvshapes.u)
+        dsim.run(1000, lmb_reg=10, epsilon=0.001, show_iterations=True)
 
         # save all the images
         cleanimage.save(
@@ -231,40 +231,37 @@ def generate_data_NN(times, root_dir,NN, NetName, size=(128, 128), append=True):
         cvim.save(
             fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["chan-vese"]), format="PNG"
         )
-        
+
         np.save(
-            file=os.path.join(sample_folder,NetName+"_seg"+".npy"),
-            arr = np.array(dsim.u),
+            file=os.path.join(sample_folder, NetName + "_seg" + ".npy"),
+            arr=np.array(dsim.u),
         )
         im = Image.fromarray(255 * np.array(dsim.u)).convert("L")
-        im.save(
-                   fp=os.path.join(sample_folder,NetName+".png"), format="PNG"
-        )
+        im.save(fp=os.path.join(sample_folder, NetName + ".png"), format="PNG")
 
-        #save the Metrics
-        cv  = np.reshape(cvshapes.u, np.size(cvshapes.u))        
-        dseg  = np.reshape(np.array(dsim.u), np.size(clean_seg))
+        # save the Metrics
+        cv = np.reshape(cvshapes.u, np.size(cvshapes.u))
+        dseg = np.reshape(np.array(dsim.u), np.size(clean_seg))
         cln = np.reshape(clean_seg, np.size(clean_seg))
         np.save(
-            file=os.path.join(sample_folder, "Jaccard_"+"cv"+".npy"),
-            arr = EM.Jaccard(cv, cln),
+            file=os.path.join(sample_folder, "Jaccard_" + "cv" + ".npy"),
+            arr=EM.Jaccard(cv, cln),
         )
         np.save(
-            file=os.path.join(sample_folder, "Jaccard_"+NetName+".npy"),
-            arr = EM.Jaccard(dseg, cln),
-        )  
-        np.save(
-            file=os.path.join(sample_folder, "Sorensen_"+"cv"+".npy"),
-            arr = EM.Sorensen(cv, cln),
+            file=os.path.join(sample_folder, "Jaccard_" + NetName + ".npy"),
+            arr=EM.Jaccard(dseg, cln),
         )
         np.save(
-            file=os.path.join(sample_folder, "Sorensen_"+NetName+".npy"),
-            arr = EM.Sorensen(dseg,cln),
-        )          
+            file=os.path.join(sample_folder, "Sorensen_" + "cv" + ".npy"),
+            arr=EM.Sorensen(cv, cln),
+        )
+        np.save(
+            file=os.path.join(sample_folder, "Sorensen_" + NetName + ".npy"),
+            arr=EM.Sorensen(dseg, cln),
+        )
 
-        
-        
-def generate_data_NN_tagged(times, root_dir,NN, NetName, size=(128, 128),  append=True):
+
+def generate_data_NN_tagged(times, root_dir, NN, NetName, size=(128, 128), append=True):
     if append:
         start_index = sum(
             1 for s in os.listdir(root_dir) if s.startswith(SAMPLE_FOLDER_PREFIX)
@@ -284,89 +281,88 @@ def generate_data_NN_tagged(times, root_dir,NN, NetName, size=(128, 128),  appen
         # if the cv is good enough then it will save if not it goes again
         evaluation = 0
         while evaluation < 0.5:
-            
-            r = np.random.choice([0,1])
+
+            r = np.random.choice([0, 1])
             shapes = ShapeGenerator(128, 128)
-            if r ==0:
-                #shapes.add_smallcorner_ellipse()
+            if r == 0:
+                # shapes.add_smallcorner_ellipse()
                 centre = shapes.add_side_ellipse()
                 cleanimage = shapes.image.copy()
-                
-                #add some extra ellispses but not ontop of the tagged one
-                for i in range(np.random.choice([1,2])):
-                    theta = np.random.choice([90,180])
+
+                # add some extra ellispses but not ontop of the tagged one
+                for i in range(np.random.choice([1, 2])):
+                    theta = np.random.choice([90, 180])
                     shapes.rotation(angle=theta)
                     shapes.add_smallcorner_ellipse()
                     shapes.rotation(angle=-theta)
             else:
                 centre = shapes.add_smallcorner_ellipse()
-                #shapes.add_side_ellipse()
+                # shapes.add_side_ellipse()
                 cleanimage = shapes.image.copy()
-                #add some extra ellispses but not ontop of the tagged one
-                for i in range(np.random.choice([1,2,3])):
-                    theta = np.random.choice([90,180,270])
+                # add some extra ellispses but not ontop of the tagged one
+                for i in range(np.random.choice([1, 2, 3])):
+                    theta = np.random.choice([90, 180, 270])
                     shapes.rotation(angle=theta)
                     shapes.add_smallcorner_ellipse()
                     shapes.rotation(angle=-theta)
-                    
-            #need to trun the grey btis white for the clean segmentation 
+
+            # need to trun the grey btis white for the clean segmentation
             datas = cleanimage.getdata()
             new_image_data = []
             for item in datas:
                 # change all grey pixels to white
-                if item in list(range(50,255)):
+                if item in list(range(50, 255)):
                     new_image_data.append(255)
                 else:
                     new_image_data.append(item)
             # update image data
             cleanimage.putdata(new_image_data)
             clean_seg = np.array(cleanimage)
-            # now all white :) 
-            
-            
-            #need to randomise the corner the ellipse was placed in 
-            theta = np.random.choice([0,90,180,270])
+            # now all white :)
+
+            # need to randomise the corner the ellipse was placed in
+            theta = np.random.choice([0, 90, 180, 270])
             shapes.rotation(angle=theta)
             cleanimage = cleanimage.rotate(theta)
-            centre = rotate_around_point_highperf(centre, theta, 
-                                                  origin=(shapes.height/2, shapes.width/2))
+            centre = rotate_around_point_highperf(
+                centre, theta, origin=(shapes.height / 2, shapes.width / 2)
+            )
 
-            #add some grey/white holes 
+            # add some grey/white holes
             shapes.add_holes2(
                 numholes=np.random.randint(40, 50),
                 width=np.random.randint(3, 4),
             )
-            #add blur
+            # add blur
             shapes.add_blur(sig=1.5)
-            
+
             centre = np.array(np.rint(centre).astype(int))
-            markers = [np.array([centre[1],centre[0]])]
-            
+            markers = [np.array([centre[1], centre[0]])]
+
             working = 0
             try:
-                dist(np.array(shapes.image)/255,markers)
+                dist(np.array(shapes.image) / 255, markers)
                 working += 1
             except:
                 print(":'(")
                 working = 0
-            
+
             if working == 1:
                 print("worked")
-                cvshapes = ChanVeseSelect(shapes.image,markers)
-                cvshapes.run(2000,gamma=4,lmb=2,theta=0.005)
+                cvshapes = ChanVeseSelect(shapes.image, markers)
+                cvshapes.run(2000, gamma=4, lmb=2, theta=0.005)
                 # they are meant to be reshaped inside Jaccard but python is
                 # ignoring that for some reason so Im doing it here :))))
                 u1 = np.reshape(cvshapes.u, np.size(cvshapes.u))
                 u2 = np.reshape(clean_seg, np.size(clean_seg))
-                evaluation = EM.Jaccard(u1, u2)  
+                evaluation = EM.Jaccard(u1, u2)
                 print(evaluation)
-        
-            
-        dsim = dst.DeepSegmentation(shapes.image,NN,cvshapes.geo,cvshapes.u)     
-        dsim.run(1000,lmb_reg=10, epsilon=0.001, lmb=1, gamma=1, show_iterations=True)
+
+        dsim = dst.DeepSegmentation(shapes.image, NN, cvshapes.geo, cvshapes.u)
+        dsim.run(1000, lmb_reg=10, epsilon=0.001, lmb=1, gamma=1, show_iterations=True)
 
         # save all the images
-        Image.fromarray(255*cvshapes.geo).convert("L").save(
+        Image.fromarray(255 * cvshapes.geo).convert("L").save(
             fp=os.path.join(sample_folder, "geomap.png"), format="PNG"
         )
         cleanimage.save(
@@ -388,53 +384,49 @@ def generate_data_NN_tagged(times, root_dir,NN, NetName, size=(128, 128),  appen
 
         cvim = Image.fromarray(255 * cvshapes.u).convert("L")
         cvim.save(
-                   fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["chan-vese"]), format="PNG"
+            fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["chan-vese"]), format="PNG"
         )
         np.save(
             file=os.path.join(sample_folder, "tag.npy"),
-            arr = np.array(np.rint(centre).astype(int)),
+            arr=np.array(np.rint(centre).astype(int)),
         )
         np.save(
-            file=os.path.join(sample_folder,NetName+"_seg"+".npy"),
-            arr = np.array(dsim.u),
+            file=os.path.join(sample_folder, NetName + "_seg" + ".npy"),
+            arr=np.array(dsim.u),
         )
-        im = Image.fromarray(255 *  np.array(dsim.u)).convert("L")
-        im.save(
-                   fp=os.path.join(sample_folder,NetName+".png"), format="PNG"
-        )
-        
-        #save the Metrics
-        cv  = np.reshape(cvshapes.u, np.size(cvshapes.u))        
-        dseg  = np.reshape(np.array(dsim.u), np.size(clean_seg))
+        im = Image.fromarray(255 * np.array(dsim.u)).convert("L")
+        im.save(fp=os.path.join(sample_folder, NetName + ".png"), format="PNG")
+
+        # save the Metrics
+        cv = np.reshape(cvshapes.u, np.size(cvshapes.u))
+        dseg = np.reshape(np.array(dsim.u), np.size(clean_seg))
         cln = np.reshape(clean_seg, np.size(clean_seg))
         np.save(
-            file=os.path.join(sample_folder, "Jaccard_"+"cv"+".npy"),
-            arr = EM.Jaccard(cv, cln),
+            file=os.path.join(sample_folder, "Jaccard_" + "cv" + ".npy"),
+            arr=EM.Jaccard(cv, cln),
         )
         np.save(
-            file=os.path.join(sample_folder, "Jaccard_"+NetName+".npy"),
-            arr = EM.Jaccard(dseg, cln),
-        )  
-        np.save(
-            file=os.path.join(sample_folder, "Sorensen_"+"cv"+".npy"),
-            arr = EM.Sorensen(cv, cln),
+            file=os.path.join(sample_folder, "Jaccard_" + NetName + ".npy"),
+            arr=EM.Jaccard(dseg, cln),
         )
         np.save(
-            file=os.path.join(sample_folder, "Sorensen_"+NetName+".npy"),
-            arr = EM.Sorensen(dseg,cln),
-        )          
+            file=os.path.join(sample_folder, "Sorensen_" + "cv" + ".npy"),
+            arr=EM.Sorensen(cv, cln),
+        )
+        np.save(
+            file=os.path.join(sample_folder, "Sorensen_" + NetName + ".npy"),
+            arr=EM.Sorensen(dseg, cln),
+        )
+
 
 def rotate_around_point_highperf(xy, theta, origin=(0, 0)):
-
     x, y = xy
     offset_x, offset_y = origin
-    adjusted_x = (x - offset_x)
-    adjusted_y = (y - offset_y)
-    cos_rad = math.cos(np.pi*theta/180)
-    sin_rad = math.sin(np.pi*theta/180)
+    adjusted_x = x - offset_x
+    adjusted_y = y - offset_y
+    cos_rad = math.cos(np.pi * theta / 180)
+    sin_rad = math.sin(np.pi * theta / 180)
     qx = offset_x + cos_rad * adjusted_x + sin_rad * adjusted_y
     qy = offset_y + -sin_rad * adjusted_x + cos_rad * adjusted_y
 
     return qx, qy
-        
-        

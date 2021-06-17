@@ -9,10 +9,10 @@ import ClassFiles.Training as train
 
 # Initialise the neural network. Optionally load a previously trained one.
 
-NN = nets.ConvNet4(1, 128, 128)
+NN = nets.ConvNet8(1, 128, 128)
 NN.load_state_dict(
     torch.load(
-        "./Neural_Networks/ConvNet4_trained_v2", map_location=torch.device("cpu")
+        "./Neural_Networks_lunglike/ConvNet8_trained", map_location=torch.device("cpu")
     )
 )
 
@@ -27,4 +27,4 @@ clean_seg_dataset = dat.SegmentationDataset("./data/", seg_type="clean")
 clean_seg_dataloader = DataLoader(clean_seg_dataset, batch_size=50, shuffle=True)
 # clean_seg_iter = iter(clean_seg_dataloader)
 
-NN = train.train_regulariser(NN, clean_seg_dataloader, cv_seg_dataloader, epochs=1)
+NN = train.train_regulariser(NN, clean_seg_dataloader, cv_seg_dataloader, epochs=2)

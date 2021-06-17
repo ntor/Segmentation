@@ -95,7 +95,7 @@ class SegmentationDataset(Dataset):
                 SEGMENTATION_TYPE_NAMES[self.seg_type],
             )
         )
-        return torch.Tensor(seg)
+        return torch.Tensor(seg).unsqueeze(0)
 
 
 def generate_data(times, root_dir, size=(128, 128), append=True):

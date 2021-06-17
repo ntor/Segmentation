@@ -15,9 +15,9 @@ def train_regulariser(
     binary=True,
     flip=False,
     device="cuda:0" if torch.cuda.is_available() else "cpu",
-    save_path = None
+    save_path=None,
 ):
-    """Train a neural network 'NN' as a Wasserstein discriminator between "good"
+    """Train a neural network 'NN' to be a distance function between 'good'
     data (provided by 'good_dataloader') and "bad" data (provided by
     'bad_dataloader'), such that it attains high values on bad, and low values
     on good data, respectively.
@@ -34,7 +34,7 @@ def train_regulariser(
     """
 
     NN.to(device)
-    optimiser = optim.Adam(NN.parameters(), lr = lr)
+    optimiser = optim.Adam(NN.parameters(), lr=lr)
 
     for j in range(epochs):
         assert len(good_dataloader) == len(bad_dataloader)
@@ -94,8 +94,7 @@ def train_regulariser(
             assert wasserstein_loss.isnan().sum() == 0
 
             # Set 'create_graph=True' so we can backprop a function of the
-            # gradient (--> second derivatives). This is needed for implementing
-            # the approximate 1-Lipschitz constraint.
+            # gradient (--> second derivatives).
             # REVIEW: Maybe we should use "retain_graph"?
             gradient = torch.autograd.grad(
                 intermediate_out.sum(), intermediate_batch, create_graph=True
@@ -103,22 +102,20 @@ def train_regulariser(
             # --> [batchsize, channels, height, width]
             assert gradient.isnan().sum() == 0
 
-            # instead of making the neural network lipschitz in an L^2 sense
-            # (where in an L^2 sense refers to how we calculate the 'size' of
-            # the derivative), make each partial derivative lipschitz (and it is
-            # quite easy to define what the size of each partial derivative is)
+            gradient_loss = (
+                F.relu(gradient.square().sum((1, 2, 3)).sqrt() - 1).square().mean()
+            )
 
-            # ends up enforcing that the 'wasserstein_loss' actually corresponds
-            # to how many pixels it thinks are different
-
-            gradient_loss = F.relu(gradient.square().sum((1, 2, 3)).sqrt() - 1).square().mean()
-
-            # mu = 1, since wasserstein_loss is scaled such that each pixel
-            # corresponds to an O(1) change in output, and gradient loss is
-            # similarly scaled above
             loss = wasserstein_loss + mu * gradient_loss  # [1]
             assert loss.isnan().sum() == 0
-            print("Wasserstein loss: {:.2f}\t Gradient Loss: {:.2f}\t Min Groundtruth: {:.2f}\t Max Chan-Vese: {:.2f}".format(wasserstein_loss.item(), gradient_loss.item(), groundtruth_out.min().item(), chanvese_out.max().item()))
+            print(
+                "Wasserstein loss: {:.2f}\t Gradient Loss: {:.2f}\t Min Groundtruth: {:.2f}\t Max Chan-Vese: {:.2f}".format(
+                    wasserstein_loss.item(),
+                    gradient_loss.item(),
+                    groundtruth_out.min().item(),
+                    chanvese_out.max().item(),
+                )
+            )
 
             # backprop step
             # no need to zero the gradients of the intermediate point, since it
@@ -129,13 +126,9 @@ def train_regulariser(
 
             assert NN.conv1.weight.isnan().sum() == 0
 
-        # print the average 'distance' the neural network has learnt between
-        # groundtruth and chanvese images. Also print the max value on
-        # groundtruth, and the min on chanvese, this gives an indication of its
-        # performance as a classifier
-        print(f"Epoch {j} done.")
-    
-    if save_path != None:
+            print(f"Epoch {j} done.")
+
+    if save_path is not None:
         torch.save(NN.state_dict(), save_path)
-    
+
     return NN.to("cpu")
