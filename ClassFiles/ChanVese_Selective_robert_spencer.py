@@ -12,7 +12,15 @@ import scipy
 
 
 class ChanVeseSelect:
-    def __init__(self, image, markers, segmentation_threshold=0.8, c=None, beta_G = 10000, epsilon_v =0.0001):     #DONE__add tag position and weight 'theta' for geodesic term 
+    def __init__(
+        self,
+        image,
+        markers,
+        segmentation_threshold=0.8,
+        c=None,
+        beta_G=10000,
+        epsilon_v=0.0001,
+    ):  # DONE__add tag position and weight 'theta' for geodesic term
         self._image_arr = np.array(image, dtype=float) / 255
         self.image_shape = self._image_arr.shape
         self.channels = len(image.getbands())
@@ -29,13 +37,17 @@ class ChanVeseSelect:
         self._u_interm = np.array(self.u)
         self._z = (np.random.random((self._dim,) + self.image_shape) - 0.5) / self._dim
         # constants used in AOS algorithm
-        self.g  = 1/(1+beta_G*np.sum(np.square(np.gradient(self._image_arr))))
-        self.b  = 4*epsilon_v/((1+epsilon_v)**(3/2))
-        self.ze = (1 - np.sqrt(1-epsilon_v))/2
-        #normalised geodesic distance (tag has to be transposed for geo image-> matrix coordinates)
-        self.geo = gdist.geodesic_distance(np.array(image),markers)/np.amax(gdist.geodesic_distance(np.array(image),markers))-0.4
-    
-    def single_step(self, lmb=0.5, epsilon=0.1, theta=0.2,gamma =1):
+        self.g = 1 / (1 + beta_G * np.sum(np.square(np.gradient(self._image_arr))))
+        self.b = 4 * epsilon_v / ((1 + epsilon_v) ** (3 / 2))
+        self.ze = (1 - np.sqrt(1 - epsilon_v)) / 2
+        # normalised geodesic distance (tag has to be transposed for geo image-> matrix coordinates)
+        self.geo = (
+            gdist.geodesic_distance(np.array(image), markers)
+            / np.amax(gdist.geodesic_distance(np.array(image), markers))
+            - 0.4
+        )
+
+    def single_step(self, lmb=0.5, epsilon=0.1, theta=0.2, gamma=1):
         """Update 'self.u', as well as the helper functions 'self._u_interm' and
         'self._z', according to a 'primal-dual' algorithm (Chambolla-Pock, 2011)
         for minimisation of the Chan-Esedoglu-Nikolova functional.
@@ -54,138 +66,164 @@ class ChanVeseSelect:
 
         """
 
-        self._z = clip_vector_field(
-            self._z + epsilon * gradient(self._u_interm)
-        )
+        self._z = clip_vector_field(self._z + epsilon * gradient(self._u_interm))
         tmp = lmb * (
             (self._image_arr - self.c[0]) ** 2 - (self._image_arr - self.c[1]) ** 2
-        )+gamma*(0.4-self.geo) 
-        # for some reason works better with 0.4, o/w too negative. No idea why this is needed?? smaller gamma makes data fitting fill in unwanted shapes but bigger gamma makes it 0 everythwhere. Mikes algorithm written out below may fix this but need to remove the full matricies as its too slow ow. 
+        ) + gamma * (0.4 - self.geo)
+        # for some reason works better with 0.4, o/w too negative. No idea why this is needed?? smaller gamma makes data fitting fill in unwanted shapes but bigger gamma makes it 0 everythwhere. Mikes algorithm written out below may fix this but need to remove the full matricies as its too slow ow.
         u_update = np.clip(self.u + epsilon * (div(self._z) - tmp), 0, 1)
         self._u_interm = (1 + theta) * u_update - theta * self.u
         self.u = u_update
-        
-        
-    def robert_spencer_single_step(self, tau=0.01, mu = 1, lmb_1=1,lmb_2=1, theta=1, gamma_1 =1, gamma_2 =1, epsilon2 = 0.0001, beta_G = 10000):
-        
+
+    def robert_spencer_single_step(
+        self,
+        tau=0.01,
+        mu=1,
+        lmb_1=1,
+        lmb_2=1,
+        theta=1,
+        gamma_1=1,
+        gamma_2=1,
+        epsilon2=0.0001,
+        beta_G=10000,
+    ):
+
         """
-        Update 'self.u', according to 'Additive Operator Splitting Algorithm' 
+        Update 'self.u', according to 'Additive Operator Splitting Algorithm'
         in Robert-Spencer https://arxiv.org/abs/1811.08751
-        
+
         (see Michael Roberts · Ke Chen · Klaus L. Irion (2018) for illustration of algorithm
         https://link.springer.com/content/pdf/10.1007/s10851-018-0857-2.pdf
         Algorithm 1
-        
-        But edit f_2 to that of 
+
+        But edit f_2 to that of
         https://arxiv.org/abs/1811.08751)
-        
-        
-        """        
-        #update c_i is done outside the single step 
+
+
+        """
+        # update c_i is done outside the single step
         self.update_c()
-        
-        #update g
-        self.g  = 1/(1+beta_G*np.sum(np.square(np.gradient(self._image_arr))))
-        
-        #Calculate r
-        
-        f_1 =  (self._image_arr - self.c[0]) ** 2 
-            
-        f_2 = np.where(self.c[0]-gamma_1<= self.u , 1+(self.u- self.c[0])/gamma_1 , 0)*np.where(self.u <= self.c[0] , 1 , 0)+ np.where(self.c[0]< self.u + gamma_2, 1-(self.u- self.c[0])/gamma_2 , 0)*np.where(self.u <= self.c[0] + gamma_2, 1, 0)
-                
-        GEO = theta * (self.geo)      
-        
-        r =  lmb_1*f_1+lmb_2*f_2 + theta*GEO
-        
-        #Calculate alpha
+
+        # update g
+        self.g = 1 / (1 + beta_G * np.sum(np.square(np.gradient(self._image_arr))))
+
+        # Calculate r
+
+        f_1 = (self._image_arr - self.c[0]) ** 2
+
+        f_2 = np.where(
+            self.c[0] - gamma_1 <= self.u, 1 + (self.u - self.c[0]) / gamma_1, 0
+        ) * np.where(self.u <= self.c[0], 1, 0) + np.where(
+            self.c[0] < self.u + gamma_2, 1 - (self.u - self.c[0]) / gamma_2, 0
+        ) * np.where(
+            self.u <= self.c[0] + gamma_2, 1, 0
+        )
+
+        GEO = theta * (self.geo)
+
+        r = lmb_1 * f_1 + lmb_2 * f_2 + theta * GEO
+
+        # Calculate alpha
         alpha = np.amax(abs(r))
-        
-        #Calcuate f 
-        
-        f = r + alpha*self.vprime()
-        
-        #Update B
-        
-        I = np.eye(self.image_shape[0],self.image_shape[1])
-        
-        b = self.b*(np.where(1+self.ze> self.u, 1, 0)*np.where(self.u >1-self.ze , 1, 0))+ (np.where(self.u<self.ze, 1, 0)*np.where(-self.ze<self.u, 1, 0))
+
+        # Calcuate f
+
+        f = r + alpha * self.vprime()
+
+        # Update B
+
+        I = np.eye(self.image_shape[0], self.image_shape[1])
+
+        b = self.b * (
+            np.where(1 + self.ze > self.u, 1, 0) * np.where(self.u > 1 - self.ze, 1, 0)
+        ) + (np.where(self.u < self.ze, 1, 0) * np.where(-self.ze < self.u, 1, 0))
 
         # Update A1 and A2 diagonals
 
-        G  = np.divide(self.g, np.sqrt(np.add(sum(np.square(np.gradient(self.u))),epsilon2)))
-        
-        G_iplus  = (G + scipy.ndimage.shift(G, [1,0]))/2
-        G_jplus  = (G + scipy.ndimage.shift(G, [0,1]))/2
-        G_iminus = (G + scipy.ndimage.shift(G,[-1,0]))/2
-        G_jminus = (G + scipy.ndimage.shift(G,[0,-1]))/2
-        
-        
-        #A1       = np.zeros((I.shape[0],I.shape[0],I.shape[1]))
-        A1_diag   = np.zeros((I.shape[0],I.shape[1]))
-        A1_upper  = np.zeros((I.shape[0],I.shape[1]))
-        A1_lower  = np.zeros((I.shape[0],I.shape[1]))
-        invIB1    = np.zeros((I.shape[0],I.shape[1]))
-        
-        
-        A2_diag   = np.zeros((I.shape[1],I.shape[0]))
-        A2_upper  = np.zeros((I.shape[1],I.shape[0]))
-        A2_lower  = np.zeros((I.shape[1],I.shape[0]))
-        invIB2    = np.zeros((I.shape[1],I.shape[0]))
-        
+        G = np.divide(
+            self.g, np.sqrt(np.add(sum(np.square(np.gradient(self.u))), epsilon2))
+        )
+
+        G_iplus = (G + scipy.ndimage.shift(G, [1, 0])) / 2
+        G_jplus = (G + scipy.ndimage.shift(G, [0, 1])) / 2
+        G_iminus = (G + scipy.ndimage.shift(G, [-1, 0])) / 2
+        G_jminus = (G + scipy.ndimage.shift(G, [0, -1])) / 2
+
+        # A1       = np.zeros((I.shape[0],I.shape[0],I.shape[1]))
+        A1_diag = np.zeros((I.shape[0], I.shape[1]))
+        A1_upper = np.zeros((I.shape[0], I.shape[1]))
+        A1_lower = np.zeros((I.shape[0], I.shape[1]))
+        invIB1 = np.zeros((I.shape[0], I.shape[1]))
+
+        A2_diag = np.zeros((I.shape[1], I.shape[0]))
+        A2_upper = np.zeros((I.shape[1], I.shape[0]))
+        A2_lower = np.zeros((I.shape[1], I.shape[0]))
+        invIB2 = np.zeros((I.shape[1], I.shape[0]))
+
         for j in range(I.shape[1]):
-            
-            invIB1[:,j] = np.reciprocal( np.ones(I.shape[0])+tau*alpha*b[:,j] )
-            
-            for i,k in np.ndindex(I.shape):
+
+            invIB1[:, j] = np.reciprocal(np.ones(I.shape[0]) + tau * alpha * b[:, j])
+
+            for i, k in np.ndindex(I.shape):
                 if k == i:
-                     A1_diag[i,j] = -(G_iplus+G_iminus)[i,j]
-                if k == i-1:
-                     A1_upper[i,j] = (G_iminus)[i,j]
-                if k == i+1:
-                     A1_lower[i,j] = (G_iplus)[i,j]
+                    A1_diag[i, j] = -(G_iplus + G_iminus)[i, j]
+                if k == i - 1:
+                    A1_upper[i, j] = (G_iminus)[i, j]
+                if k == i + 1:
+                    A1_lower[i, j] = (G_iplus)[i, j]
 
         for i in range(I.shape[0]):
 
-            invIB2[:,i] = np.reciprocal( np.ones(I.shape[1])+tau*alpha*b[i,:] )
-           
-            for j,k in np.ndindex(I.shape):
+            invIB2[:, i] = np.reciprocal(np.ones(I.shape[1]) + tau * alpha * b[i, :])
+
+            for j, k in np.ndindex(I.shape):
                 if k == j:
-                     A2_diag [j,i] = -(G_jplus+G_jminus)[i,j]
-                if k == j-1:
-                     A2_upper[j,i] = (G_jminus)[i,j]
-                if k == j+1:
-                     A2_lower[j,i] = (G_jplus)[i,j]
-                        
-        #need to double check thosis right...
-        Q1_diag  = np.ones((I.shape[0],I.shape[1]))-2*tau*mu*np.multiply(invIB1,A1_diag)
-        Q1_upper = -2*tau*mu*np.multiply(invIB1,A1_upper)
-        Q1_lower = -2*tau*mu*np.multiply(invIB1,A1_lower)
-        
-        
-        Q2_diag  = np.ones((I.shape[0],I.shape[1]))-2*tau*mu*np.multiply(invIB2,A2_diag)
-        Q2_upper = -2*tau*mu*np.multiply(invIB2,A2_upper)
-        Q2_lower = -2*tau*mu*np.multiply(invIB2,A2_lower)
-                        
-                        
+                    A2_diag[j, i] = -(G_jplus + G_jminus)[i, j]
+                if k == j - 1:
+                    A2_upper[j, i] = (G_jminus)[i, j]
+                if k == j + 1:
+                    A2_lower[j, i] = (G_jplus)[i, j]
+
+        # need to double check thosis right...
+        Q1_diag = np.ones((I.shape[0], I.shape[1])) - 2 * tau * mu * np.multiply(
+            invIB1, A1_diag
+        )
+        Q1_upper = -2 * tau * mu * np.multiply(invIB1, A1_upper)
+        Q1_lower = -2 * tau * mu * np.multiply(invIB1, A1_lower)
+
+        Q2_diag = np.ones((I.shape[0], I.shape[1])) - 2 * tau * mu * np.multiply(
+            invIB2, A2_diag
+        )
+        Q2_upper = -2 * tau * mu * np.multiply(invIB2, A2_upper)
+        Q2_lower = -2 * tau * mu * np.multiply(invIB2, A2_lower)
+
         # Update u
         u1 = np.zeros(I.shape)
         u2 = np.zeros(I.shape)
         oldu = self.u
-                                       
+
         for j in range(I.shape[1]):
-            u1[:,j] = scipy.linalg.solve_banded( (1, 1),
-                                                 np.array([Q1_upper[:,j], Q1_diag[:,j] , Q1_lower[:,j] ]),
-                                                 oldu[:,j]+ tau*np.multiply(invIB1[:,j],f[:,j])   
-                                               )/2
-            
+            u1[:, j] = (
+                scipy.linalg.solve_banded(
+                    (1, 1),
+                    np.array([Q1_upper[:, j], Q1_diag[:, j], Q1_lower[:, j]]),
+                    oldu[:, j] + tau * np.multiply(invIB1[:, j], f[:, j]),
+                )
+                / 2
+            )
+
         for i in range(I.shape[0]):
-            u2[i,:] = scipy.linalg.solve_banded( (1, 1),
-                                                 np.array([Q2_upper[:,i], Q2_diag[:,i] , Q2_lower[:,i] ]),
-                                                 oldu[i,:]+ tau*np.multiply(invIB2[:,i],f[i,:])   
-                                               )/2
- 
-        self.u =  u1+u2
-    
+            u2[i, :] = (
+                scipy.linalg.solve_banded(
+                    (1, 1),
+                    np.array([Q2_upper[:, i], Q2_diag[:, i], Q2_lower[:, i]]),
+                    oldu[i, :] + tau * np.multiply(invIB2[:, i], f[i, :]),
+                )
+                / 2
+            )
+
+        self.u = u1 + u2
+
     def update_c(self):
         """Update the average colours in the segmentation domain and its complement. See
         'get_segmentation_mean_colours' for more information.
@@ -206,7 +244,15 @@ class ChanVeseSelect:
     def run(
         self,
         steps,
-        tau=0.01, mu = 1, lmb_1=1,lmb_2=1, theta=1, gamma_1 =1, gamma_2 =1, epsilon2 = 0.0001,beta_G = 10000,
+        tau=0.01,
+        mu=1,
+        lmb_1=1,
+        lmb_2=1,
+        theta=1,
+        gamma_1=1,
+        gamma_2=1,
+        epsilon2=0.0001,
+        beta_G=10000,
         update_c_interval=5,
         show_iterations=False,
         show_energy=False,
@@ -216,7 +262,9 @@ class ChanVeseSelect:
             step_range = tqdm(step_range)
 
         for i in step_range:
-            self.robert_spencer_single_step(tau, mu , lmb_1,lmb_2, theta, gamma_1 , gamma_2 , epsilon2 , beta_G)
+            self.robert_spencer_single_step(
+                tau, mu, lmb_1, lmb_2, theta, gamma_1, gamma_2, epsilon2, beta_G
+            )
             if (i + 1) % update_c_interval == 0:
                 self.update_c()
                 if show_energy:
@@ -272,13 +320,15 @@ class ChanVeseSelect:
         if print_total_steps:
             print("Total steps until stabilisation: {}".format(i))
 
-    def vprime(self,epsilon_v = 0.0001):
-        raw      = (4*self.u-2)/np.sqrt((np.add(np.square(np.add(2*self.u,-1)),epsilon_v)))
-        support1 = np.where(1-self.ze> self.u, 1, 0)
-        support2 = np.where(self.u>self.ze, 1, 0)
-        return raw*support1*support2
+    def vprime(self, epsilon_v=0.0001):
+        raw = (4 * self.u - 2) / np.sqrt(
+            (np.add(np.square(np.add(2 * self.u, -1)), epsilon_v))
+        )
+        support1 = np.where(1 - self.ze > self.u, 1, 0)
+        support2 = np.where(self.u > self.ze, 1, 0)
+        return raw * support1 * support2
 
-    
+
 # Obsolete divergence function. Dropped in favor of the simpler
 # finite-difference version "div"
 
@@ -300,10 +350,10 @@ class ChanVeseSelect:
 
 
 def div(grad):
-    '''
+    """
     Compute the divergence of a gradient
     Courtesy : E. Gouillart - https://github.com/emmanuelle/tomo-tv/
-    '''
+    """
     res = np.zeros(grad.shape[1:])
     for d in range(grad.shape[0]):
         this_grad = np.rollaxis(grad[d], d)
@@ -315,13 +365,18 @@ def div(grad):
 
 
 def gradient(img):
-    '''
+    """
     Compute the gradient of an image as a numpy array
     Courtesy : E. Gouillart - https://github.com/emmanuelle/tomo-tv/
-    '''
-    shape = [img.ndim, ] + list(img.shape)
+    """
+    shape = [
+        img.ndim,
+    ] + list(img.shape)
     gradient = np.zeros(shape, dtype=img.dtype)
-    slice_all = [0, slice(None, -1),]
+    slice_all = [
+        0,
+        slice(None, -1),
+    ]
     for d in range(img.ndim):
         gradient[slice_all] = np.diff(img, axis=d)
         slice_all[0] = d + 1
@@ -411,15 +466,3 @@ def clip_vector_field(z, threshold=1):
 
     return np.apply_along_axis(criterion, -1, z)
     # return z / ((1 + np.maximum(0, np.apply_along_axis(np.linalg.norm, -1, z) - 1))[...,np.newaxis])
-    
-
-    
-
-
-    
-    
-    
-    
-    
-    
-    
