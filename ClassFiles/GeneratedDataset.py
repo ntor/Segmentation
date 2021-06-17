@@ -47,6 +47,7 @@ IMAGE_TYPE_NAMES = {
 
 SEGMENTATION_TYPE_NAMES = {
     "clean": "clean_seg.npy",
+    "dirty": "dirty_seg.npy",
     "chan-vese": "dirty_cv_seg.npy",
     "deep-segmentation": "dirty_ds_seg.npy",
 }
@@ -95,7 +96,7 @@ class SegmentationDataset(Dataset):
                 SEGMENTATION_TYPE_NAMES[self.seg_type],
             )
         )
-        return torch.Tensor(seg).unsqueeze(0)
+        return torch.Tensor(seg)
 
 
 def generate_data(times, root_dir, size=(128, 128), append=True):
@@ -334,8 +335,173 @@ def generate_data_lunglike_tagged(times, root_dir, size=(128, 128), append=True)
         #)
         np.save(
             file=os.path.join(sample_folder, "tag.npy"),
-            arr = np.array(centre),
+            arr = np.array(centre).astype(int),
         )
+        
+        
+def gen_data_polygons(FILEPATH,datasize,append=True,size=(128, 128)):
+    
+    #Polygons
+
+    SHAPENAME = ["null", "null", "triangle","square"]
+    times = datasize
+    for j in range(2,4):
+        
+        root_dir = os.path.join(FILEPATH, SHAPENAME[j])
+        
+        if append:
+            start_index = sum(
+                1 for s in os.listdir(root_dir) if s.startswith(SAMPLE_FOLDER_PREFIX)
+            )
+        else:
+            start_index = 0
+
+        for i in tqdm(range(times)):
+            sample_folder = os.path.join(
+                root_dir, SAMPLE_FOLDER_PREFIX + "{}".format(i + start_index)
+            )
+            try:
+                os.mkdir(sample_folder)
+            except FileExistsError:
+                pass
+
+            # create random polygon
+            shapes = ShapeGenerator(128, 128)
+            shapes.add_polygon(size=0.4 * 128,nverts=j+1)
+
+            cleanimage = shapes.image.copy()
+
+            #need to trun the grey btis white for the clean segmentation 
+            datas = cleanimage.getdata()
+            new_image_data = []
+            for item in datas:
+                    # change all grey pixels to white
+                    if item in list(range(50,255)):
+                        new_image_data.append(255)
+                    else:
+                        new_image_data.append(item)
+
+            #update image data
+            cleanimage.putdata(new_image_data)
+            clean_seg = np.array(cleanimage)
+            # now all white :)
+
+            #add some grey/white holes 
+            shapes.add_holes(
+                    numholes=np.random.randint(40, 50),
+                    width=np.random.randint(3, 4),
+                )
+
+
+            #add blur
+            shapes.add_blur(sig=1.5)
+            #add noise
+            shapes.add_noise(sig=0.1)
+
+            #save 
+
+            cleanimage.save(
+                fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["clean"]), format="PNG"
+            )
+            np.save(
+                file=os.path.join(sample_folder, SEGMENTATION_TYPE_NAMES["clean"]),
+                arr=np.array(cleanimage) / 255,
+            )
+
+            shapes.image.save(
+                fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["dirty"]), format="PNG"
+            )
+            np.save(
+                file=os.path.join(sample_folder, SEGMENTATION_TYPE_NAMES["dirty"]),
+                arr=np.array(shapes.image) / 255,
+            )
+
+def gen_data_round(FILEPATH,datasize,append=True,size=(128, 128)):
+    
+    #Polygons
+
+    SHAPENAME = ["ellipse", "anulus"]
+    times = datasize
+    for j in range(2):
+        
+        root_dir = os.path.join(FILEPATH, SHAPENAME[j])
+        
+        if append:
+            start_index = sum(
+                1 for s in os.listdir(root_dir) if s.startswith(SAMPLE_FOLDER_PREFIX)
+            )
+        else:
+            start_index = 0
+
+        for i in tqdm(range(times)):
+            sample_folder = os.path.join(
+                root_dir, SAMPLE_FOLDER_PREFIX + "{}".format(i + start_index)
+            )
+            try:
+                os.mkdir(sample_folder)
+            except FileExistsError:
+                pass
+
+            # create random polygon
+            shapes = ShapeGenerator(128, 128)
+            if j==0:
+                shapes.add_ellipse(size=0.4 * 128)
+            else:
+                shapes.add_anulus(size=0.4 * 128)
+
+            cleanimage = shapes.image.copy()
+
+            #need to trun the grey btis white for the clean segmentation 
+            datas = cleanimage.getdata()
+            new_image_data = []
+            for item in datas:
+                    # change all grey pixels to white
+                    if item in list(range(50,255)):
+                        new_image_data.append(255)
+                    else:
+                        new_image_data.append(item)
+
+            #update image data
+            cleanimage.putdata(new_image_data)
+            clean_seg = np.array(cleanimage)
+            # now all white :)
+
+            #add some grey/white holes 
+            shapes.add_holes(
+                    numholes=np.random.randint(40, 50),
+                    width=np.random.randint(3, 4),
+                )
+
+
+            #add blur
+            shapes.add_blur(sig=1.5)
+            #add noise
+            shapes.add_noise(sig=0.01)
+
+            #save 
+
+            cleanimage.save(
+                fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["clean"]), format="PNG"
+            )
+            np.save(
+                file=os.path.join(sample_folder, SEGMENTATION_TYPE_NAMES["clean"]),
+                arr=np.array(cleanimage) / 255,
+            )
+
+            shapes.image.save(
+                fp=os.path.join(sample_folder, IMAGE_TYPE_NAMES["dirty"]), format="PNG"
+            )
+            np.save(
+                file=os.path.join(sample_folder, SEGMENTATION_TYPE_NAMES["dirty"]),
+                arr=np.array(shapes.image) / 255,
+            )
+
+
+ 
+
+
+
+
         
 
 def rotate_around_point_highperf(xy, theta, origin=(0, 0)):
