@@ -1,5 +1,5 @@
-# Requires folder structure
-#
+# Requires folder structure data/traingle,square,ellipse,annulus
+# 
 
 import numpy as np
 from ClassFiles.GeneratedDataset import gen_data_polygons
