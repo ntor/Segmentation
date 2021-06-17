@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
-import torch
+# This files shows how to use the "ImageDataset" and "SegmentationDataset"
+# classes in order to load images and segmentation from a given folder. As an
+# example we browse through the 10 first pairs of images and segmentations and
+# show them on the screen.
+
 from torch.utils.data import DataLoader
 import ClassFiles.GeneratedDataset as dat
 import matplotlib.pyplot as plt

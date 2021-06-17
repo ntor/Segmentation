@@ -196,11 +196,13 @@ ds_steps = 40
 animation_sleep = 100
 steps_left = 0
 
+
 # --- NETWORK INITIALISATION ---
 NN = net.ConvNet8(1, 128, 128)
 NN.load_state_dict(torch.load("./Neural_Networks_lunglike/ConvNet8_trained_v2", map_location=torch.device('cpu')))
 
 
+# --- ANIMATION FUNCTIONS ---
 def draw_contour(contour):
     if contour is not None:
         for c in contour.collections:

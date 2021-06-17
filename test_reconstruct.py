@@ -1,17 +1,13 @@
-"""
-Run in main directory
-"""
+#!/usr/bin/env python3
 
+# This file loads a networks and uses it for constructing a segmentation of some
+# image. (Don't reuse, the __getitem__ really shouldn't be used this way.)
 
 import torch
 import ClassFiles.Networks as net
 import ClassFiles.GeneratedDataset as dat
-import ClassFiles.Training as train
 import ClassFiles.DeepSegmentation as rec
-from torch.utils.data import DataLoader
 from PIL import Image
-import matplotlib.pyplot as plt
-import numpy as np
 
 clean_image_dataset = dat.ImageDataset("./Neural_Networks_lunglike/eval", "clean")
 dirty_image_dataset = dat.ImageDataset("./Neural_Networks_lunglike/eval", "dirty")

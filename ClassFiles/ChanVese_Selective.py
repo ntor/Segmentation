@@ -12,7 +12,6 @@ import scipy
 
 
 class ChanVeseSelect:
-    # DONE: add tag position and weight 'theta' for geodesic term
     def __init__(
         self,
         image,
@@ -78,7 +77,7 @@ class ChanVeseSelect:
         self._u_interm = (1 + theta) * u_update - theta * self.u
         self.u = u_update
 
-    def update_c(self):
+x    def update_c(self):
         """Update the average colours in the segmentation domain and its complement. See
         'get_segmentation_mean_colours' for more information.
         """

@@ -44,9 +44,20 @@
 - [X] Implement different classifier architectures [Lucas]
 
 
+* HPC Access
+Login: ~ssh <crsid>@login-gpu.hpc.cam.ac.uk~
+See all jobs: ~squeue~
+See available resources: ~mybalance~
+Kill jobs ~killall -u <crsid>~
+Activate interactive session: ~sintr -A SCHOENLIEB-SL3-GPU -p pascal -t 12:0:0 --gres=gpu:4~
+See used GPU resources in interactive session ~nvidea-smi~
+See used RAM resources in interactive session ~free -m~
+
+Put your own data into the ~rds/hpc-work~ subfolder in the home directory (not back-uped).
 
 
 * TODO Jobs
+- [ ] Delete ~data_create.py~?
 - [ ] Send Mike the code with problems
 - [ ] Study whether it is beneficial to make the segmentations binary in training.
   (Making them binary means dropping the "data manifold hypothesis")
@@ -60,7 +71,6 @@
   + [X] Move test files and notebooks to an independent directory, but change exec. path
   + [X] Access to computation resources
   + [X] Rename files according to conventions
-
 
 * Overview
 1) [X] "ROF" paper (/Nonlinear total variation based noise removal algorithms/):

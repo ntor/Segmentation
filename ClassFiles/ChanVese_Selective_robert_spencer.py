@@ -20,7 +20,7 @@ class ChanVeseSelect:
         c=None,
         beta_G=10000,
         epsilon_v=0.0001,
-    ):  # DONE__add tag position and weight 'theta' for geodesic term
+    ):
         self._image_arr = np.array(image, dtype=float) / 255
         self.image_shape = self._image_arr.shape
         self.channels = len(image.getbands())

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# This files shows how to load various trained networks and evaluate them on
+# some data (showing how the networks value differs between inputs from "dirty"
+# and "clean" segmentations).
+
 import torch
 import numpy as np
 import ClassFiles.Networks as nets
