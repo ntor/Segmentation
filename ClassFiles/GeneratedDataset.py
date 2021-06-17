@@ -420,7 +420,7 @@ def gen_data_round(FILEPATH,datasize,append=True,size=(128, 128)):
     
     #Polygons
 
-    SHAPENAME = ["ellipse", "anulus"]
+    SHAPENAME = ["ellipse", "annulus"]
     times = datasize
     for j in range(2):
         
